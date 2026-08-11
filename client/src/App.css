@@ -1,8 +1,130 @@
+/* Awanishop sage + charcoal — semantic tokens for shadcn / Tailwind (full hsl() values). */
+@layer base {
+  :root {
+    /*
+      Background: very light tint of sage.
+      Foreground: deep charcoal from the logo.
+    */
+    --background: hsl(91 20% 98%);
+    --foreground: hsl(200 14% 21%);
+
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(200 14% 21%);
+
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(200 14% 21%);
+
+    /* Primary: sage green from the logo */
+    --primary: hsl(91 20% 62%);
+    --primary-foreground: hsl(200 14% 21%);
+
+    --secondary: hsl(91 15% 90%);
+    --secondary-foreground: hsl(200 14% 21%);
+
+    --muted: hsl(91 10% 92%);
+    --muted-foreground: hsl(200 10% 45%);
+
+    --accent: hsl(91 15% 88%);
+    --accent-foreground: hsl(200 14% 21%);
+
+    --destructive: hsl(0 60% 50%);
+    --destructive-foreground: hsl(0 0% 98%);
+
+    --border: hsl(91 15% 85%);
+    --input: hsl(91 15% 85%);
+    --ring: hsl(91 20% 62%);
+
+    --radius: 0.5rem;
+
+    /* Charts: sage / charcoal family */
+    --chart-1: hsl(91 28% 42%);
+    --chart-2: hsl(91 22% 52%);
+    --chart-3: hsl(200 14% 35%);
+    --chart-4: hsl(91 18% 62%);
+    --chart-5: hsl(200 12% 48%);
+
+    /* Sidebar aligned with shell */
+    --sidebar: hsl(91 22% 97%);
+    --sidebar-foreground: hsl(200 14% 21%);
+    --sidebar-primary: hsl(91 20% 62%);
+    --sidebar-primary-foreground: hsl(200 14% 21%);
+    --sidebar-accent: hsl(91 15% 92%);
+    --sidebar-accent-foreground: hsl(200 14% 21%);
+    --sidebar-border: hsl(91 15% 88%);
+    --sidebar-ring: hsl(91 20% 62%);
+
+    /* Legacy marketing / layout helpers (used outside Tailwind utilities) */
+    --text: hsl(200 10% 45%);
+    --text-h: hsl(200 14% 21%);
+    --bg: hsl(91 20% 98%);
+    --code-bg: hsl(91 12% 94%);
+    --accent-bg: hsl(91 20% 62% / 0.12);
+    --accent-border: hsl(91 20% 62% / 0.45);
+    --social-bg: hsl(91 15% 94% / 0.85);
+  }
+
+  .dark {
+    /*
+      Dark: charcoal shell with off-white sage text.
+    */
+    --background: hsl(200 14% 10%);
+    --foreground: hsl(91 20% 96%);
+
+    --card: hsl(200 14% 14%);
+    --card-foreground: hsl(91 20% 96%);
+
+    --popover: hsl(200 14% 14%);
+    --popover-foreground: hsl(91 20% 96%);
+
+    --primary: hsl(91 20% 62%);
+    --primary-foreground: hsl(200 14% 10%);
+
+    --secondary: hsl(200 14% 18%);
+    --secondary-foreground: hsl(91 20% 96%);
+
+    --muted: hsl(200 14% 18%);
+    --muted-foreground: hsl(91 10% 65%);
+
+    --accent: hsl(200 14% 22%);
+    --accent-foreground: hsl(91 20% 96%);
+
+    --destructive: hsl(0 60% 40%);
+    --destructive-foreground: hsl(91 20% 96%);
+
+    --border: hsl(200 14% 22%);
+    --input: hsl(200 14% 22%);
+    --ring: hsl(91 20% 62%);
+
+    --chart-1: hsl(91 25% 58%);
+    --chart-2: hsl(91 18% 48%);
+    --chart-3: hsl(91 12% 70%);
+    --chart-4: hsl(200 12% 45%);
+    --chart-5: hsl(200 10% 32%);
+
+    --sidebar: hsl(200 14% 12%);
+    --sidebar-foreground: hsl(91 20% 96%);
+    --sidebar-primary: hsl(91 20% 62%);
+    --sidebar-primary-foreground: hsl(200 14% 10%);
+    --sidebar-accent: hsl(200 14% 18%);
+    --sidebar-accent-foreground: hsl(91 20% 96%);
+    --sidebar-border: hsl(200 14% 22%);
+    --sidebar-ring: hsl(91 20% 62%);
+
+    --text: hsl(91 10% 65%);
+    --text-h: hsl(91 20% 96%);
+    --bg: hsl(200 14% 10%);
+    --code-bg: hsl(200 14% 16%);
+    --accent-bg: hsl(91 20% 62% / 0.18);
+    --accent-border: hsl(91 20% 62% / 0.45);
+    --social-bg: hsl(200 14% 18% / 0.65);
+  }
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
   border-radius: 5px;
-  color: var(--accent);
+  color: var(--primary);
   background: var(--accent-bg);
   border: 2px solid transparent;
   transition: border-color 0.3s;
@@ -12,7 +134,7 @@
     border-color: var(--accent-border);
   }
   &:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
 }
