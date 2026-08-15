@@ -134,7 +134,10 @@ export function DashboardPage() {
                       />
                       <YAxis tick={{ fontSize: 11 }} width={60} />
                       <Tooltip
-                        formatter={(v: number) => [`${v.toFixed(0)} DZD`, 'Chiffre d\'affaires']}
+                        formatter={(v) => [
+                          `${Number(v ?? 0).toFixed(0)} DZD`,
+                          "Chiffre d'affaires",
+                        ]}
                         labelFormatter={(l) => `Date: ${l}`}
                       />
                       <Area

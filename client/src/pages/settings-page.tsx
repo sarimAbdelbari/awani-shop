@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Delete02Icon } from '@hugeicons/core-free-icons'
 
@@ -20,7 +19,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { authApi, settingsApi } from '@/api'
+import { getApiErrorMessage } from '@/api/axios'
 import { useI18n } from '@/i18n'
+import { error_toast, sucess_toast } from '@/utils/toastNotification'
 import type { AuthUser, Settings } from '@/types'
 
 export function SettingsPage() {
@@ -41,15 +42,18 @@ export function SettingsPage() {
   const [userSaving, setUserSaving] = useState(false)
 
   useEffect(() => {
-    settingsApi.get().then((s) => {
-      setSettings(s)
-      setForm({
-        loyaltyThreshold: String(s.loyaltyThreshold),
-        loyaltyReward: String(s.loyaltyReward),
-        shopName: s.shopName,
-        currency: s.currency,
+    settingsApi
+      .get()
+      .then((s) => {
+        setSettings(s)
+        setForm({
+          loyaltyThreshold: String(s.loyaltyThreshold),
+          loyaltyReward: String(s.loyaltyReward),
+          shopName: s.shopName,
+          currency: s.currency,
+        })
       })
-    }).catch(() => toast.error(t('common.error')))
+      .catch(() => error_toast(t('common.error')))
 
     authApi.getUsers().then(setUsers).catch(() => {})
   }, [t])
@@ -64,9 +68,9 @@ export function SettingsPage() {
         currency: form.currency.trim(),
       })
       setSettings(updated)
-      toast.success(t('settings.saved'))
+      sucess_toast(t('settings.saved'))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('common.error'))
+      error_toast(getApiErrorMessage(err, t('common.error')))
     } finally {
       setSaving(false)
     }
@@ -74,19 +78,19 @@ export function SettingsPage() {
 
   const handleCreateUser = async () => {
     if (!userForm.name || !userForm.username || !userForm.password) {
-      toast.error('Tous les champs sont requis')
+      error_toast('Tous les champs sont requis')
       return
     }
     setUserSaving(true)
     try {
       await authApi.createUser(userForm)
-      toast.success('Utilisateur créé')
+      sucess_toast('Utilisateur créé')
       setUserSheetOpen(false)
       setUserForm({ name: '', username: '', password: '', role: 'cashier' })
       const updated = await authApi.getUsers()
       setUsers(updated)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('common.error'))
+      error_toast(getApiErrorMessage(err, t('common.error')))
     } finally {
       setUserSaving(false)
     }
@@ -96,10 +100,10 @@ export function SettingsPage() {
     if (!confirm('Supprimer cet utilisateur ?')) return
     try {
       await authApi.deleteUser(id)
-      toast.success('Utilisateur supprimé')
+      sucess_toast('Utilisateur supprimé')
       setUsers((u) => u.filter((x) => x.id !== id))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('common.error'))
+      error_toast(getApiErrorMessage(err, t('common.error')))
     }
   }
 

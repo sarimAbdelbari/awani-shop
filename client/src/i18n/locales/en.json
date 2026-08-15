@@ -1,6 +1,7 @@
 {
   "nav": {
     "statistiques": "Statistics",
+    "masterData": "Master data",
     "clients": "Clients",
     "products": "Products",
     "orders": "Orders",
@@ -25,6 +26,7 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
+    "view": "View",
     "add": "Add",
     "search": "Search",
     "loading": "Loading...",
@@ -44,7 +46,14 @@
     "price": "Price",
     "total": "Total",
     "note": "Note",
-    "currency": "DZD"
+    "currency": "DZD",
+    "location": "Location",
+    "code": "Code",
+    "active": "Active",
+    "inactive": "Inactive",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "status": "Status"
   },
   "clients": {
     "title": "Clients",
@@ -52,7 +61,6 @@
     "editClient": "Edit client",
     "fullName": "Full name",
     "loyaltyPoints": "Loyalty points",
-    "totalSpent": "Total spent",
     "since": "Client since",
     "noClients": "No clients registered"
   },
@@ -60,14 +68,15 @@
     "title": "Products",
     "addProduct": "New product",
     "editProduct": "Edit product",
+    "code": "Product code",
     "qrCode": "QR Code / Reference",
-    "buyPrice": "Buy price",
-    "sellPrice": "Sell price",
-    "stock": "Stock",
-    "lowStock": "Low stock",
     "category": "Category",
-    "supplier": "Supplier",
-    "noProducts": "No products"
+    "categoryLocked": "Category cannot be changed",
+    "codeAuto": "Generated automatically",
+    "showInactive": "Show inactive",
+    "noProducts": "No products",
+    "deactivated": "Product deactivated",
+    "activated": "Product activated"
   },
   "orders": {
     "title": "Orders",
@@ -116,14 +125,19 @@
     "title": "Suppliers",
     "addSupplier": "New supplier",
     "editSupplier": "Edit supplier",
+    "fullName": "Full name",
+    "location": "Location",
+    "nif": "NIF",
+    "nis": "NIS",
+    "rc": "RC",
     "noSuppliers": "No suppliers"
   },
   "categories": {
     "title": "Categories",
     "addCategory": "New category",
     "editCategory": "Edit category",
-    "nameFr": "Name (French)",
-    "nameEn": "Name (English)",
+    "code": "Code (3 letters)",
+    "codeHelp": "E.g. GLS for Glass — locked after creation",
     "noCategories": "No categories"
   },
   "dashboard": {

@@ -23,9 +23,22 @@ const getClient = async (req, res) => {
   }
 };
 
+const normalizePhone = (phone) => {
+  if (phone === undefined || phone === null) return null;
+  const trimmed = String(phone).trim();
+  return trimmed === '' ? null : trimmed;
+};
+
 const createClient = async (req, res) => {
   try {
-    const client = await Client.create(req.body);
+    const fullName = String(req.body.fullName || '').trim();
+    if (!fullName) return res.status(400).json({ message: 'fullName is required' });
+
+    const client = await Client.create({
+      fullName,
+      phone: normalizePhone(req.body.phone),
+      loyaltyPoints: req.body.loyaltyPoints ?? 0,
+    });
     res.status(201).json(client);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -34,12 +47,23 @@ const createClient = async (req, res) => {
 
 const updateClient = async (req, res) => {
   try {
-    const client = await Client.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const client = await Client.findById(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client not found' });
+
+    if (req.body.fullName !== undefined) {
+      const fullName = String(req.body.fullName).trim();
+      if (!fullName) return res.status(400).json({ message: 'fullName is required' });
+      client.fullName = fullName;
+    }
+    if (req.body.phone !== undefined) {
+      client.phone = normalizePhone(req.body.phone);
+    }
+    // loyaltyPoints are system-managed later; ignore client edits for now unless admin passes them
+    if (req.body.loyaltyPoints !== undefined) {
+      client.loyaltyPoints = Number(req.body.loyaltyPoints) || 0;
+    }
+
+    await client.save();
     res.json(client);
   } catch (err) {
     res.status(400).json({ message: err.message });

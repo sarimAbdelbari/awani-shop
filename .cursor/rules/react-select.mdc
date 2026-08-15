@@ -1,0 +1,33 @@
+---
+description: react-select usage — never portal/fixed menu
+globs: **/*.{tsx,jsx}
+alwaysApply: false
+---
+
+# react-select
+
+Do **not** set these props on any `react-select` instance:
+
+- `menuPortalTarget`
+- `menuPosition="fixed"`
+
+They break selection / interaction in this project. The default in-place menu works correctly (including inside dialogs).
+
+```tsx
+// ❌ BAD
+<Select
+  menuPortalTarget={document.body}
+  menuPosition="fixed"
+  ...
+/>
+
+// ✅ GOOD
+<Select
+  options={options}
+  value={value}
+  onChange={onChange}
+  ...
+/>
+```
+
+Also omit unused `menuPortal` style overrides when not portaling.

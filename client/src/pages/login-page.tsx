@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,8 +13,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { authApi } from '@/api'
+import { getApiErrorMessage } from '@/api/axios'
 import { useAuth } from '@/context/AuthContext'
 import { useI18n } from '@/i18n'
+import { error_toast } from '@/utils/toastNotification'
 import awaniShopLogo from '@/assets/main/AwaniShop.jpg'
 
 export function LoginPage() {
@@ -36,7 +37,7 @@ export function LoginPage() {
       login(token, user)
       navigate('/dashboard', { replace: true })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('auth.invalidCredentials'))
+      error_toast(getApiErrorMessage(err, t('auth.invalidCredentials')))
     } finally {
       setLoading(false)
     }

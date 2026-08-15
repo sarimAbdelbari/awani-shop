@@ -4,7 +4,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Toaster } from '@/components/ui/sonner'
+import { AppToastContainer } from '@/components/app-toast-container'
 
 import { useAuth } from '@/context/AuthContext'
 import { LoginPage } from '@/pages/login-page'
@@ -50,13 +50,14 @@ function DashboardLayout() {
         <SiteHeader />
         <Outlet />
       </SidebarInset>
-      <Toaster />
     </SidebarProvider>
   )
 }
 
 export default function App() {
   return (
+    <>
+    <AppToastContainer />
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
@@ -105,5 +106,6 @@ export default function App() {
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </>
   )
 }

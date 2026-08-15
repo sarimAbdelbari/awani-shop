@@ -16,7 +16,7 @@
 
     /* Primary: sage green from the logo */
     --primary: hsl(91 20% 62%);
-    --primary-foreground: hsl(200 14% 21%);
+    --primary-foreground: hsl(0 0% 100%);
 
     --secondary: hsl(91 15% 90%);
     --secondary-foreground: hsl(200 14% 21%);
@@ -77,7 +77,7 @@
     --popover-foreground: hsl(91 20% 96%);
 
     --primary: hsl(91 20% 62%);
-    --primary-foreground: hsl(200 14% 10%);
+    --primary-foreground: hsl(0 0% 100%);
 
     --secondary: hsl(200 14% 18%);
     --secondary-foreground: hsl(91 20% 96%);

@@ -35,21 +35,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t, locale, setLocale } = useI18n()
   const { isAdmin } = useAuth()
 
-  const navMain = [
+  const topNav = [
     {
       title: t('nav.statistiques'),
       url: '/dashboard',
       icon: <HugeiconsIcon icon={ChartHistogramIcon} strokeWidth={2} />,
-    },
-    {
-      title: t('nav.clients'),
-      url: '/dashboard/clients',
-      icon: <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />,
-    },
-    {
-      title: t('nav.products'),
-      url: '/dashboard/products',
-      icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
     },
     {
       title: t('nav.orders'),
@@ -60,6 +50,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t('nav.stock'),
       url: '/dashboard/stock',
       icon: <HugeiconsIcon icon={WarehouseIcon} strokeWidth={2} />,
+    },
+  ]
+
+  const masterDataNav = [
+    {
+      title: t('nav.clients'),
+      url: '/dashboard/clients',
+      icon: <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />,
+    },
+    {
+      title: t('nav.products'),
+      url: '/dashboard/products',
+      icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
     },
     ...(isAdmin
       ? [
@@ -121,12 +124,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={topNav} />
+        <NavMain items={masterDataNav} label={t('nav.masterData')} />
         <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
 
       <SidebarFooter>
-        {/* Language toggle */}
         <div className="flex justify-center gap-1 px-2 pb-1">
           <Button
             variant={locale === 'fr' ? 'default' : 'ghost'}

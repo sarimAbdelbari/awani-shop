@@ -1,6 +1,7 @@
 {
   "nav": {
     "statistiques": "Statistiques",
+    "masterData": "Données de base",
     "clients": "Clients",
     "products": "Produits",
     "orders": "Commandes",
@@ -25,6 +26,7 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "edit": "Modifier",
+    "view": "Voir",
     "add": "Ajouter",
     "search": "Rechercher",
     "loading": "Chargement...",
@@ -44,7 +46,14 @@
     "price": "Prix",
     "total": "Total",
     "note": "Note",
-    "currency": "DZD"
+    "currency": "DZD",
+    "location": "Localisation",
+    "code": "Code",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "deactivate": "Désactiver",
+    "activate": "Activer",
+    "status": "Statut"
   },
   "clients": {
     "title": "Clients",
@@ -52,7 +61,6 @@
     "editClient": "Modifier le client",
     "fullName": "Nom complet",
     "loyaltyPoints": "Points fidélité",
-    "totalSpent": "Total dépensé",
     "since": "Client depuis",
     "noClients": "Aucun client enregistré"
   },
@@ -60,14 +68,15 @@
     "title": "Produits",
     "addProduct": "Nouveau produit",
     "editProduct": "Modifier le produit",
+    "code": "Code produit",
     "qrCode": "Code QR / Référence",
-    "buyPrice": "Prix d'achat",
-    "sellPrice": "Prix de vente",
-    "stock": "Stock",
-    "lowStock": "Stock bas",
     "category": "Catégorie",
-    "supplier": "Fournisseur",
-    "noProducts": "Aucun produit"
+    "categoryLocked": "La catégorie ne peut pas être modifiée",
+    "codeAuto": "Généré automatiquement",
+    "showInactive": "Afficher les inactifs",
+    "noProducts": "Aucun produit",
+    "deactivated": "Produit désactivé",
+    "activated": "Produit activé"
   },
   "orders": {
     "title": "Commandes",
@@ -116,14 +125,19 @@
     "title": "Fournisseurs",
     "addSupplier": "Nouveau fournisseur",
     "editSupplier": "Modifier le fournisseur",
+    "fullName": "Nom complet",
+    "location": "Localisation",
+    "nif": "NIF",
+    "nis": "NIS",
+    "rc": "RC",
     "noSuppliers": "Aucun fournisseur"
   },
   "categories": {
     "title": "Catégories",
     "addCategory": "Nouvelle catégorie",
     "editCategory": "Modifier la catégorie",
-    "nameFr": "Nom (Français)",
-    "nameEn": "Nom (Anglais)",
+    "code": "Code (3 lettres)",
+    "codeHelp": "Ex: GLS pour Verre — utilisé après création",
     "noCategories": "Aucune catégorie"
   },
   "dashboard": {

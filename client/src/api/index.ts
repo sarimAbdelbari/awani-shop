@@ -1,4 +1,4 @@
-import { apiFetch } from './base'
+import axiosInstance from './axios'
 import type {
   AuthUser,
   Client,
@@ -13,93 +13,216 @@ import type {
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 export const authApi = {
-  login: (username: string, password: string) =>
-    apiFetch.post<{ token: string; user: AuthUser }>('/auth/login', { username, password }),
-  setup: (name: string, username: string, password: string) =>
-    apiFetch.post<{ token: string; user: AuthUser }>('/auth/setup', { name, username, password }),
-  me: () => apiFetch.get<AuthUser>('/auth/me'),
-  getUsers: () => apiFetch.get<AuthUser[]>('/auth/users'),
-  createUser: (data: { name: string; username: string; password: string; role: string }) =>
-    apiFetch.post<AuthUser>('/auth/users', data),
-  deleteUser: (id: string) => apiFetch.delete(`/auth/users/${id}`),
+  login: async (username: string, password: string) => {
+    const { data } = await axiosInstance.post<{ token: string; user: AuthUser }>('/auth/login', {
+      username,
+      password,
+    })
+    return data
+  },
+  setup: async (name: string, username: string, password: string) => {
+    const { data } = await axiosInstance.post<{ token: string; user: AuthUser }>('/auth/setup', {
+      name,
+      username,
+      password,
+    })
+    return data
+  },
+  me: async () => {
+    const { data } = await axiosInstance.get<AuthUser>('/auth/me')
+    return data
+  },
+  getUsers: async () => {
+    const { data } = await axiosInstance.get<AuthUser[]>('/auth/users')
+    return data
+  },
+  createUser: async (payload: {
+    name: string
+    username: string
+    password: string
+    role: string
+  }) => {
+    const { data } = await axiosInstance.post<AuthUser>('/auth/users', payload)
+    return data
+  },
+  deleteUser: async (id: string) => {
+    const { data } = await axiosInstance.delete(`/auth/users/${id}`)
+    return data
+  },
 }
 
 // ── Clients ─────────────────────────────────────────────────────────────────
 export const clientApi = {
-  list: (search?: string) =>
-    apiFetch.get<Client[]>(`/clients${search ? `?search=${encodeURIComponent(search)}` : ''}`),
-  get: (id: string) => apiFetch.get<Client>(`/clients/${id}`),
-  create: (data: Partial<Client>) => apiFetch.post<Client>('/clients', data),
-  update: (id: string, data: Partial<Client>) => apiFetch.put<Client>(`/clients/${id}`, data),
-  remove: (id: string) => apiFetch.delete<{ message: string }>(`/clients/${id}`),
+  list: async (search?: string) => {
+    const { data } = await axiosInstance.get<Client[]>('/clients', {
+      params: search ? { search } : undefined,
+    })
+    return data
+  },
+  get: async (id: string) => {
+    const { data } = await axiosInstance.get<Client>(`/clients/${id}`)
+    return data
+  },
+  create: async (payload: Partial<Client>) => {
+    const { data } = await axiosInstance.post<Client>('/clients', payload)
+    return data
+  },
+  update: async (id: string, payload: Partial<Client>) => {
+    const { data } = await axiosInstance.put<Client>(`/clients/${id}`, payload)
+    return data
+  },
+  remove: async (id: string) => {
+    const { data } = await axiosInstance.delete<{ message: string }>(`/clients/${id}`)
+    return data
+  },
 }
 
 // ── Categories ───────────────────────────────────────────────────────────────
 export const categoryApi = {
-  list: () => apiFetch.get<Category[]>('/categories'),
-  create: (data: { name: { fr: string; en: string } }) =>
-    apiFetch.post<Category>('/categories', data),
-  update: (id: string, data: { name: { fr: string; en: string } }) =>
-    apiFetch.put<Category>(`/categories/${id}`, data),
-  remove: (id: string) => apiFetch.delete<{ message: string }>(`/categories/${id}`),
+  list: async () => {
+    const { data } = await axiosInstance.get<Category[]>('/categories')
+    return data
+  },
+  create: async (payload: { name: string; code: string }) => {
+    const { data } = await axiosInstance.post<Category>('/categories', payload)
+    return data
+  },
+  update: async (id: string, payload: { name: string }) => {
+    const { data } = await axiosInstance.put<Category>(`/categories/${id}`, payload)
+    return data
+  },
+  remove: async (id: string) => {
+    const { data } = await axiosInstance.delete<{ message: string }>(`/categories/${id}`)
+    return data
+  },
 }
 
 // ── Suppliers ────────────────────────────────────────────────────────────────
 export const supplierApi = {
-  list: (search?: string) =>
-    apiFetch.get<Supplier[]>(`/suppliers${search ? `?search=${encodeURIComponent(search)}` : ''}`),
-  create: (data: Partial<Supplier>) => apiFetch.post<Supplier>('/suppliers', data),
-  update: (id: string, data: Partial<Supplier>) =>
-    apiFetch.put<Supplier>(`/suppliers/${id}`, data),
-  remove: (id: string) => apiFetch.delete<{ message: string }>(`/suppliers/${id}`),
+  list: async (search?: string) => {
+    const { data } = await axiosInstance.get<Supplier[]>('/suppliers', {
+      params: search ? { search } : undefined,
+    })
+    return data
+  },
+  create: async (payload: Partial<Supplier>) => {
+    const { data } = await axiosInstance.post<Supplier>('/suppliers', payload)
+    return data
+  },
+  update: async (id: string, payload: Partial<Supplier>) => {
+    const { data } = await axiosInstance.put<Supplier>(`/suppliers/${id}`, payload)
+    return data
+  },
+  remove: async (id: string) => {
+    const { data } = await axiosInstance.delete<{ message: string }>(`/suppliers/${id}`)
+    return data
+  },
 }
 
 // ── Products ─────────────────────────────────────────────────────────────────
 export const productApi = {
-  list: (search?: string, category?: string) => {
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    if (category) params.set('category', category)
-    const qs = params.toString()
-    return apiFetch.get<Product[]>(`/products${qs ? `?${qs}` : ''}`)
+  list: async (opts?: {
+    search?: string
+    category?: string
+    active?: 'true' | 'false' | 'all'
+  }) => {
+    const { data } = await axiosInstance.get<Product[]>('/products', { params: opts })
+    return data
   },
-  get: (id: string) => apiFetch.get<Product>(`/products/${id}`),
-  create: (data: Partial<Product>) => apiFetch.post<Product>('/products', data),
-  update: (id: string, data: Partial<Product>) =>
-    apiFetch.put<Product>(`/products/${id}`, data),
-  remove: (id: string) => apiFetch.delete<{ message: string }>(`/products/${id}`),
+  get: async (id: string) => {
+    const { data } = await axiosInstance.get<Product>(`/products/${id}`)
+    return data
+  },
+  create: async (payload: { name: string; qrCode?: string; category: string }) => {
+    const { data } = await axiosInstance.post<Product>('/products', payload)
+    return data
+  },
+  update: async (id: string, payload: { name?: string; qrCode?: string }) => {
+    const { data } = await axiosInstance.put<Product>(`/products/${id}`, payload)
+    return data
+  },
+  deactivate: async (id: string) => {
+    const { data } = await axiosInstance.patch<Product>(`/products/${id}/deactivate`)
+    return data
+  },
+  activate: async (id: string) => {
+    const { data } = await axiosInstance.patch<Product>(`/products/${id}/activate`)
+    return data
+  },
+  remove: async (id: string) => {
+    const { data } = await axiosInstance.delete<{ message: string }>(`/products/${id}`)
+    return data
+  },
 }
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 export const orderApi = {
-  list: (params?: { client?: string; from?: string; to?: string }) => {
-    const qs = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
-    return apiFetch.get<Order[]>(`/orders${qs ? `?${qs}` : ''}`)
+  list: async (params?: { client?: string; from?: string; to?: string }) => {
+    const { data } = await axiosInstance.get<Order[]>('/orders', { params })
+    return data
   },
-  get: (id: string) => apiFetch.get<Order>(`/orders/${id}`),
-  create: (data: {
+  get: async (id: string) => {
+    const { data } = await axiosInstance.get<Order>(`/orders/${id}`)
+    return data
+  },
+  create: async (payload: {
     clientId?: string
     items: { productId: string; qty: number; discount?: number }[]
     note?: string
-  }) => apiFetch.post<Order>('/orders', data),
-  stats: () => apiFetch.get<DashboardStats>('/orders/stats'),
+  }) => {
+    const { data } = await axiosInstance.post<Order>('/orders', payload)
+    return data
+  },
+  stats: async () => {
+    const { data } = await axiosInstance.get<DashboardStats>('/orders/stats')
+    return data
+  },
 }
 
 // ── Stock ────────────────────────────────────────────────────────────────────
 export const stockApi = {
-  movements: (params?: { product?: string; type?: string; from?: string; to?: string }) => {
-    const qs = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
-    return apiFetch.get<StockMovement[]>(`/stock/movements${qs ? `?${qs}` : ''}`)
+  movements: async (params?: {
+    product?: string
+    type?: string
+    from?: string
+    to?: string
+  }) => {
+    const { data } = await axiosInstance.get<StockMovement[]>('/stock/movements', { params })
+    return data
   },
-  alerts: () => apiFetch.get<Product[]>('/stock/alerts'),
-  delivery: (data: { productId: string; quantity: number; note?: string }) =>
-    apiFetch.post<{ movement: StockMovement; product: Product }>('/stock/delivery', data),
-  adjust: (data: { productId: string; quantity: number; type: 'in' | 'out'; note?: string }) =>
-    apiFetch.post<{ movement: StockMovement }>('/stock/adjust', data),
+  alerts: async () => {
+    const { data } = await axiosInstance.get<Product[]>('/stock/alerts')
+    return data
+  },
+  delivery: async (payload: { productId: string; quantity: number; note?: string }) => {
+    const { data } = await axiosInstance.post<{
+      movement: StockMovement
+      product: Product
+    }>('/stock/delivery', payload)
+    return data
+  },
+  adjust: async (payload: {
+    productId: string
+    quantity: number
+    type: 'in' | 'out'
+    note?: string
+  }) => {
+    const { data } = await axiosInstance.post<{ movement: StockMovement }>(
+      '/stock/adjust',
+      payload
+    )
+    return data
+  },
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 export const settingsApi = {
-  get: () => apiFetch.get<Settings>('/settings'),
-  update: (data: Partial<Settings>) => apiFetch.put<Settings>('/settings', data),
+  get: async () => {
+    const { data } = await axiosInstance.get<Settings>('/settings')
+    return data
+  },
+  update: async (payload: Partial<Settings>) => {
+    const { data } = await axiosInstance.put<Settings>('/settings', payload)
+    return data
+  },
 }

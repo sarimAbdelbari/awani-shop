@@ -7,40 +7,43 @@ export interface AuthUser {
 export interface Client {
   _id: string
   fullName: string
-  phone: string
+  phone: string | null
   loyaltyPoints: number
-  totalSpent: number
   createdAt: string
   updatedAt: string
 }
 
 export interface Category {
   _id: string
-  name: { fr: string; en: string }
+  name: string
+  code: string
+  nextProductSeq: number
   createdAt: string
+  updatedAt: string
 }
 
 export interface Supplier {
   _id: string
-  name: string
+  fullName: string
   phone: string
+  location: string
+  nif: string
+  nis: string
+  rc: string
   email: string
-  address: string
   createdAt: string
+  updatedAt: string
 }
 
 export interface Product {
   _id: string
+  code: string
   name: string
   qrCode: string
-  buyPrice: number
-  sellPrice: number
-  quantity: number
-  lowStockThreshold: number
-  isLowStock: boolean
   category: Category | null
-  supplier: Supplier | null
+  isActive: boolean
   createdAt: string
+  updatedAt: string
 }
 
 export interface OrderItem {

@@ -2,20 +2,19 @@ const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema(
   {
+    code: { type: String, required: true, unique: true, trim: true, uppercase: true },
     name: { type: String, required: true, trim: true },
-    qrCode: { type: String, trim: true, sparse: true, default: '' },
-    buyPrice: { type: Number, required: true, min: 0 },
-    sellPrice: { type: Number, required: true, min: 0 },
-    quantity: { type: Number, default: 0, min: 0 },
-    lowStockThreshold: { type: Number, default: 5, min: 0 },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
-    supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', default: null },
+    qrCode: { type: String, trim: true, default: '' },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      required: true,
+    },
+    isActive: { type: Boolean, default: true },
   },
-  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+  { timestamps: true }
 );
 
-productSchema.virtual('isLowStock').get(function () {
-  return this.quantity <= this.lowStockThreshold;
-});
+productSchema.index({ name: 1, isActive: 1 });
 
 module.exports = mongoose.model('Product', productSchema);

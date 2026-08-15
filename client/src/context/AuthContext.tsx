@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react'
+import Cookies from 'js-cookie'
 import type { AuthUser } from '../types'
 
 interface AuthContextType {
@@ -19,27 +20,30 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
 })
 
+function readUserCookie(): AuthUser | null {
+  const stored = Cookies.get('user')
+  if (!stored) return null
+  try {
+    return JSON.parse(stored) as AuthUser
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('aw_token'))
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const stored = localStorage.getItem('aw_user')
-    try {
-      return stored ? (JSON.parse(stored) as AuthUser) : null
-    } catch {
-      return null
-    }
-  })
+  const [token, setToken] = useState<string | null>(() => Cookies.get('token') ?? null)
+  const [user, setUser] = useState<AuthUser | null>(() => readUserCookie())
 
   const login = (newToken: string, newUser: AuthUser) => {
-    localStorage.setItem('aw_token', newToken)
-    localStorage.setItem('aw_user', JSON.stringify(newUser))
+    Cookies.set('token', newToken, { expires: 1 })
+    Cookies.set('user', JSON.stringify(newUser), { expires: 1 })
     setToken(newToken)
     setUser(newUser)
   }
 
   const logout = () => {
-    localStorage.removeItem('aw_token')
-    localStorage.removeItem('aw_user')
+    Cookies.remove('token')
+    Cookies.remove('user')
     setToken(null)
     setUser(null)
   }

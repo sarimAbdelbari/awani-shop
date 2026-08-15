@@ -1,34 +1,37 @@
-import type { ReactNode } from "react"
-import { Link, useLocation } from "react-router-dom"
-
+import type { ReactNode } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-
+} from '@/components/ui/sidebar'
 
 export function NavMain({
   items,
+  label,
 }: {
   items: {
     title: string
     url: string
     icon?: ReactNode
   }[]
+  label?: string
 }) {
   const { pathname } = useLocation()
 
+  if (items.length === 0) return null
+
   return (
     <SidebarGroup>
+      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarGroupContent className="flex flex-col gap-2">
-     
         <SidebarMenu>
           {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
+            <SidebarMenuItem key={item.url}>
               <SidebarMenuButton
                 tooltip={item.title}
                 asChild

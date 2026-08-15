@@ -4,6 +4,8 @@ const {
   getProduct,
   createProduct,
   updateProduct,
+  deactivateProduct,
+  activateProduct,
   deleteProduct,
 } = require('../controllers/product.controller');
 const { protect } = require('../middleware/auth.middleware');
@@ -14,6 +16,8 @@ router.get('/', getProducts);
 router.get('/:id', getProduct);
 router.post('/', allowRoles('admin'), createProduct);
 router.put('/:id', allowRoles('admin'), updateProduct);
+router.patch('/:id/deactivate', allowRoles('admin'), deactivateProduct);
+router.patch('/:id/activate', allowRoles('admin'), activateProduct);
 router.delete('/:id', allowRoles('admin'), deleteProduct);
 
 module.exports = router;

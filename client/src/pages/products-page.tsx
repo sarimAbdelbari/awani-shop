@@ -1,40 +1,29 @@
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Add01Icon, PencilEdit01Icon, Delete02Icon } from '@hugeicons/core-free-icons'
+import {
+  Add01Icon,
+  PencilEdit01Icon,
+  Cancel01Icon,
+  Tick02Icon,
+  Delete02Icon,
+  ViewIcon,
+} from '@hugeicons/core-free-icons'
 
+import {
+  CreateProductDialog,
+  UpdateProductDialog,
+  DeleteProductDialog,
+  ViewProductDialog,
+} from '@/components/products'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { categoryApi, productApi, supplierApi } from '@/api'
+import { categoryApi, productApi } from '@/api'
+import { getApiErrorMessage } from '@/api/axios'
 import { useAuth } from '@/context/AuthContext'
 import { useI18n } from '@/i18n'
-import type { Category, Product, Supplier } from '@/types'
-
-const EMPTY_FORM = {
-  name: '',
-  qrCode: '',
-  buyPrice: '',
-  sellPrice: '',
-  quantity: '',
-  lowStockThreshold: '5',
-  category: '',
-  supplier: '',
-}
+import { error_toast, sucess_toast } from '@/utils/toastNotification'
+import type { Category, Product } from '@/types'
 
 export function ProductsPage() {
   const { t } = useI18n()
@@ -42,22 +31,25 @@ export function ProductsPage() {
 
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [search, setSearch] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
-  const [form, setForm] = useState(EMPTY_FORM)
-  const [saving, setSaving] = useState(false)
+  const [viewing, setViewing] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState<Product | null>(null)
 
   const fetchProducts = async () => {
     setLoading(true)
     try {
-      const data = await productApi.list(search.trim() || undefined)
+      const data = await productApi.list({
+        search: search.trim() || undefined,
+        active: showInactive ? 'all' : 'true',
+      })
       setProducts(data)
-    } catch {
-      toast.error(t('common.error'))
+    } catch (err) {
+      error_toast(getApiErrorMessage(err, t('common.error')))
     } finally {
       setLoading(false)
     }
@@ -66,80 +58,25 @@ export function ProductsPage() {
   useEffect(() => {
     const handler = setTimeout(fetchProducts, 300)
     return () => clearTimeout(handler)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, showInactive])
 
   useEffect(() => {
-    Promise.all([categoryApi.list(), supplierApi.list()])
-      .then(([cats, sups]) => {
-        setCategories(cats)
-        setSuppliers(sups)
-      })
-      .catch(() => {})
+    categoryApi.list().then(setCategories).catch(() => {})
   }, [])
 
-  const openAdd = () => {
-    setEditing(null)
-    setForm(EMPTY_FORM)
-    setSheetOpen(true)
-  }
-
-  const openEdit = (p: Product) => {
-    setEditing(p)
-    setForm({
-      name: p.name,
-      qrCode: p.qrCode,
-      buyPrice: String(p.buyPrice),
-      sellPrice: String(p.sellPrice),
-      quantity: String(p.quantity),
-      lowStockThreshold: String(p.lowStockThreshold),
-      category: p.category?._id ?? '',
-      supplier: p.supplier?._id ?? '',
-    })
-    setSheetOpen(true)
-  }
-
-  const handleSave = async () => {
-    if (!form.name || !form.sellPrice || !form.buyPrice) {
-      toast.error('Nom, prix achat et prix vente sont requis')
-      return
-    }
-    setSaving(true)
+  const toggleActive = async (p: Product) => {
     try {
-      const payload = {
-        name: form.name.trim(),
-        qrCode: form.qrCode.trim(),
-        buyPrice: parseFloat(form.buyPrice),
-        sellPrice: parseFloat(form.sellPrice),
-        quantity: parseInt(form.quantity) || 0,
-        lowStockThreshold: parseInt(form.lowStockThreshold) || 5,
-        category: form.category || null,
-        supplier: form.supplier || null,
-      }
-      if (editing) {
-        await productApi.update(editing._id, payload)
-        toast.success('Produit mis à jour')
+      if (p.isActive) {
+        await productApi.deactivate(p._id)
+        sucess_toast(t('products.deactivated'))
       } else {
-        await productApi.create(payload)
-        toast.success('Produit créé')
+        await productApi.activate(p._id)
+        sucess_toast(t('products.activated'))
       }
-      setSheetOpen(false)
       fetchProducts()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('common.error'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDelete = async (p: Product) => {
-    if (!confirm(`Supprimer "${p.name}" ?`)) return
-    try {
-      await productApi.remove(p._id)
-      toast.success('Produit supprimé')
-      fetchProducts()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('common.error'))
+      error_toast(getApiErrorMessage(err, t('common.error')))
     }
   }
 
@@ -148,19 +85,30 @@ export function ProductsPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t('products.title')}</h1>
         {isAdmin && (
-          <Button onClick={openAdd} size="sm">
+          <Button onClick={() => setCreateOpen(true)} size="sm">
             <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
             {t('products.addProduct')}
           </Button>
         )}
       </div>
 
-      <Input
-        placeholder={`${t('common.search')} par nom ou QR code...`}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <Input
+          placeholder={`${t('common.search')}…`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+        <label className="text-muted-foreground flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+            className="accent-primary size-4"
+          />
+          {t('products.showInactive')}
+        </label>
+      </div>
 
       {loading ? (
         <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
@@ -170,61 +118,87 @@ export function ProductsPage() {
         <div className="rounded-lg border">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/50">
+              <tr className="bg-muted/50 border-b">
+                <th className="px-4 py-3 text-left font-medium">{t('products.code')}</th>
                 <th className="px-4 py-3 text-left font-medium">{t('common.name')}</th>
                 <th className="px-4 py-3 text-left font-medium">{t('products.qrCode')}</th>
-                {isAdmin && (
-                  <th className="px-4 py-3 text-right font-medium">{t('products.buyPrice')}</th>
-                )}
-                <th className="px-4 py-3 text-right font-medium">{t('products.sellPrice')}</th>
-                <th className="px-4 py-3 text-center font-medium">{t('products.stock')}</th>
                 <th className="px-4 py-3 text-left font-medium">{t('products.category')}</th>
-                {isAdmin && <th className="px-4 py-3" />}
+                <th className="px-4 py-3 text-center font-medium">{t('common.status')}</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {products.map((p) => (
-                <tr key={p._id} className="border-b last:border-0 hover:bg-muted/30">
+                <tr key={p._id} className="hover:bg-muted/30 border-b last:border-0">
+                  <td className="px-4 py-3 font-mono text-xs font-medium">{p.code}</td>
                   <td className="px-4 py-3 font-medium">{p.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                  <td className="text-muted-foreground px-4 py-3 font-mono text-xs">
                     {p.qrCode || '—'}
                   </td>
-                  {isAdmin && (
-                    <td className="px-4 py-3 text-right tabular-nums">{p.buyPrice.toFixed(2)}</td>
-                  )}
-                  <td className="px-4 py-3 text-right font-semibold tabular-nums">
-                    {p.sellPrice.toFixed(2)} DZD
+                  <td className="text-muted-foreground px-4 py-3">
+                    {p.category ? `${p.category.code} — ${p.category.name}` : '—'}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <Badge variant={p.quantity === 0 ? 'destructive' : p.isLowStock ? 'outline' : 'secondary'}>
-                      {p.quantity}
+                    <Badge variant={p.isActive ? 'secondary' : 'outline'}>
+                      {p.isActive ? t('common.active') : t('common.inactive')}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {p.category?.name.fr ?? '—'}
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-7"
+                        onClick={() => setViewing(p)}
+                        title={t('common.view')}
+                      >
+                        <HugeiconsIcon icon={ViewIcon} strokeWidth={2} className="size-3.5" />
+                      </Button>
+                      {isAdmin && (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-7"
+                            onClick={() => setEditing(p)}
+                            title={t('common.edit')}
+                          >
+                            <HugeiconsIcon
+                              icon={PencilEdit01Icon}
+                              strokeWidth={2}
+                              className="size-3.5"
+                            />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-7"
+                            onClick={() => toggleActive(p)}
+                            title={p.isActive ? t('common.deactivate') : t('common.activate')}
+                          >
+                            <HugeiconsIcon
+                              icon={p.isActive ? Cancel01Icon : Tick02Icon}
+                              strokeWidth={2}
+                              className="size-3.5"
+                            />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive size-7"
+                            onClick={() => setDeleting(p)}
+                            title={t('common.delete')}
+                          >
+                            <HugeiconsIcon
+                              icon={Delete02Icon}
+                              strokeWidth={2}
+                              className="size-3.5"
+                            />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </td>
-                  {isAdmin && (
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-7"
-                          onClick={() => openEdit(p)}
-                        >
-                          <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} className="size-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive size-7"
-                          onClick={() => handleDelete(p)}
-                        >
-                          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-3.5" />
-                        </Button>
-                      </div>
-                    </td>
-                  )}
                 </tr>
               ))}
             </tbody>
@@ -232,123 +206,36 @@ export function ProductsPage() {
         </div>
       )}
 
-      {/* Add / Edit Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>
-              {editing ? t('products.editProduct') : t('products.addProduct')}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 flex flex-col gap-4">
-            <div className="space-y-1.5">
-              <Label>{t('common.name')} *</Label>
-              <Input
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Nom du produit"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t('products.qrCode')}</Label>
-              <Input
-                value={form.qrCode}
-                onChange={(e) => setForm((f) => ({ ...f, qrCode: e.target.value }))}
-                placeholder="Code barre / QR"
-                className="font-mono"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t('products.buyPrice')} *</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.buyPrice}
-                  onChange={(e) => setForm((f) => ({ ...f, buyPrice: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('products.sellPrice')} *</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.sellPrice}
-                  onChange={(e) => setForm((f) => ({ ...f, sellPrice: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t('common.quantity')}</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.quantity}
-                  onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Seuil alerte</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.lowStockThreshold}
-                  onChange={(e) => setForm((f) => ({ ...f, lowStockThreshold: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t('products.category')}</Label>
-              <Select
-                value={form.category}
-                onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir une catégorie" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" ">— Aucune —</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c._id} value={c._id}>
-                      {c.name.fr}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t('products.supplier')}</Label>
-              <Select
-                value={form.supplier}
-                onValueChange={(v) => setForm((f) => ({ ...f, supplier: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir un fournisseur" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" ">— Aucun —</SelectItem>
-                  {suppliers.map((s) => (
-                    <SelectItem key={s._id} value={s._id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2 pt-2">
-              <Button className="flex-1" onClick={handleSave} disabled={saving}>
-                {saving ? t('common.loading') : t('common.save')}
-              </Button>
-              <Button variant="outline" onClick={() => setSheetOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <CreateProductDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        categories={categories}
+        onSuccess={fetchProducts}
+      />
+      <UpdateProductDialog
+        open={editing !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditing(null)
+        }}
+        product={editing}
+        categories={categories}
+        onSuccess={fetchProducts}
+      />
+      <ViewProductDialog
+        open={viewing !== null}
+        onOpenChange={(open) => {
+          if (!open) setViewing(null)
+        }}
+        product={viewing}
+      />
+      <DeleteProductDialog
+        open={deleting !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null)
+        }}
+        product={deleting}
+        onSuccess={fetchProducts}
+      />
     </div>
   )
 }
