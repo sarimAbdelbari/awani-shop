@@ -46,6 +46,50 @@ export interface Product {
   updatedAt: string
 }
 
+export interface Lot {
+  _id: string
+  code: string
+  name: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type ReceptionLineStatus = 'A' | 'R'
+
+export interface ReceptionLine {
+  _id?: string
+  product: Product | string
+  lot: Lot | string
+  quantity: number
+  status: ReceptionLineStatus
+  buyPrice: number
+  sellPrice: number
+  expiryDate: string | null
+  observation: string
+}
+
+export interface Reception {
+  _id: string
+  number: string
+  supplier: Supplier | string
+  note: string
+  lines: ReceptionLine[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface StockPosition {
+  product: Pick<Product, '_id' | 'code' | 'name'> | null
+  lot: Pick<Lot, '_id' | 'code' | 'name'> | null
+  quantity: number
+  lastBuyPrice: number
+  lastSellPrice: number
+  nearestExpiry: string | null
+  lastReceptionAt: string
+  lastReceptionNumber: string
+}
+
 export interface OrderItem {
   product: Product | string
   qty: number
@@ -71,7 +115,7 @@ export interface StockMovement {
   product: Product
   type: 'in' | 'out'
   quantity: number
-  source: 'order' | 'supplier-delivery' | 'manual'
+  source: 'order' | 'supplier-delivery' | 'manual' | 'reception'
   referenceId: string | null
   note: string
   date: string

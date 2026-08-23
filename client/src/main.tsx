@@ -9,6 +9,9 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/context/AuthContext'
 import { I18nProvider } from '@/i18n'
 
+
+
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

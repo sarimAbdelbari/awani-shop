@@ -6,6 +6,8 @@ const settingsSchema = new mongoose.Schema(
     loyaltyReward: { type: Number, default: 50, min: 0 },
     currency: { type: String, default: 'DZD' },
     shopName: { type: String, default: 'Awani Shop', trim: true },
+    receptionYear: { type: Number, default: () => new Date().getFullYear() },
+    nextReceptionSeq: { type: Number, default: 1, min: 1 },
   },
   { timestamps: true }
 );

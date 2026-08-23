@@ -116,7 +116,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-8 p-4 md:p-6">
+    <div className="flex min-w-0 flex-1 flex-col gap-8 p-4 md:p-6">
       <h1 className="text-2xl font-semibold">{t('settings.title')}</h1>
 
       {/* Loyalty & shop settings */}

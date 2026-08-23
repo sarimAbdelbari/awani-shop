@@ -1,5 +1,5 @@
 const StockMovement = require('../models/StockMovement');
-const Product = require('../models/Product');
+const Reception = require('../models/Reception');
 
 const getMovements = async (req, res) => {
   try {
@@ -13,7 +13,7 @@ const getMovements = async (req, res) => {
       if (to) filter.date.$lte = new Date(to);
     }
     const movements = await StockMovement.find(filter)
-      .populate('product', 'name qrCode')
+      .populate('product', 'name code')
       .sort({ date: -1 })
       .limit(200);
     res.json(movements);
@@ -22,72 +22,71 @@ const getMovements = async (req, res) => {
   }
 };
 
-const getLowStockAlerts = async (req, res) => {
+const getPositions = async (_req, res) => {
   try {
-    const products = await Product.find()
-      .populate('category', 'name')
-      .populate('supplier', 'name');
-    const alerts = products.filter((p) => p.quantity <= p.lowStockThreshold);
-    res.json(alerts);
+    const rows = await Reception.aggregate([
+      { $sort: { createdAt: 1 } },
+      { $unwind: '$lines' },
+      { $match: { 'lines.status': 'A' } },
+      {
+        $group: {
+          _id: { product: '$lines.product', lot: '$lines.lot' },
+          quantity: { $sum: '$lines.quantity' },
+          lastBuyPrice: { $last: '$lines.buyPrice' },
+          lastSellPrice: { $last: '$lines.sellPrice' },
+          nearestExpiry: {
+            $min: {
+              $cond: [
+                { $ne: ['$lines.expiryDate', null] },
+                '$lines.expiryDate',
+                null,
+              ],
+            },
+          },
+          lastReceptionAt: { $last: '$createdAt' },
+          lastReceptionNumber: { $last: '$number' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: '_id.product',
+          foreignField: '_id',
+          as: 'product',
+        },
+      },
+      {
+        $lookup: {
+          from: 'lots',
+          localField: '_id.lot',
+          foreignField: '_id',
+          as: 'lot',
+        },
+      },
+      { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$lot', preserveNullAndEmptyArrays: true } },
+      { $sort: { 'product.name': 1, 'lot.name': 1 } },
+    ]);
+
+    res.json(
+      rows.map((row) => ({
+        product: row.product
+          ? { _id: row.product._id, code: row.product.code, name: row.product.name }
+          : null,
+        lot: row.lot
+          ? { _id: row.lot._id, code: row.lot.code, name: row.lot.name }
+          : null,
+        quantity: row.quantity,
+        lastBuyPrice: row.lastBuyPrice,
+        lastSellPrice: row.lastSellPrice,
+        nearestExpiry: row.nearestExpiry,
+        lastReceptionAt: row.lastReceptionAt,
+        lastReceptionNumber: row.lastReceptionNumber,
+      }))
+    );
   } catch {
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-const recordDelivery = async (req, res) => {
-  try {
-    const { productId, quantity, note } = req.body;
-    if (!productId || !quantity || Number(quantity) < 1)
-      return res.status(400).json({ message: 'productId and quantity (≥ 1) are required' });
-
-    const product = await Product.findByIdAndUpdate(
-      productId,
-      { $inc: { quantity: Number(quantity) } },
-      { new: true }
-    );
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-
-    const movement = await StockMovement.create({
-      product: productId,
-      type: 'in',
-      quantity: Number(quantity),
-      source: 'supplier-delivery',
-      note: note || '',
-    });
-
-    res.status(201).json({ movement, product });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
-
-const recordManualAdjustment = async (req, res) => {
-  try {
-    const { productId, quantity, type, note } = req.body;
-    if (!productId || !quantity || !type)
-      return res.status(400).json({ message: 'productId, quantity, and type are required' });
-    if (!['in', 'out'].includes(type))
-      return res.status(400).json({ message: 'type must be "in" or "out"' });
-
-    const delta = type === 'in' ? Number(quantity) : -Number(quantity);
-    const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-    if (product.quantity + delta < 0)
-      return res.status(400).json({ message: 'Cannot reduce stock below zero' });
-
-    await Product.findByIdAndUpdate(productId, { $inc: { quantity: delta } });
-    const movement = await StockMovement.create({
-      product: productId,
-      type,
-      quantity: Number(quantity),
-      source: 'manual',
-      note: note || '',
-    });
-
-    res.status(201).json({ movement });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
-
-module.exports = { getMovements, getLowStockAlerts, recordDelivery, recordManualAdjustment };
+module.exports = { getMovements, getPositions };

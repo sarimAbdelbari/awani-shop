@@ -7,8 +7,11 @@ import type {
   Product,
   Order,
   StockMovement,
+  StockPosition,
   Settings,
   DashboardStats,
+  Lot,
+  Reception,
 } from '../types'
 
 // ── Auth ────────────────────────────────────────────────────────────────────
@@ -179,6 +182,64 @@ export const orderApi = {
   },
 }
 
+// ── Lots ─────────────────────────────────────────────────────────────────────
+export const lotApi = {
+  list: async () => {
+    const { data } = await axiosInstance.get<Lot[]>('/lots')
+    return data
+  },
+  create: async (payload: { name: string; code: string; isActive?: boolean }) => {
+    const { data } = await axiosInstance.post<Lot>('/lots', payload)
+    return data
+  },
+  update: async (id: string, payload: { name?: string; isActive?: boolean }) => {
+    const { data } = await axiosInstance.put<Lot>(`/lots/${id}`, payload)
+    return data
+  },
+  remove: async (id: string) => {
+    const { data } = await axiosInstance.delete<{ message: string }>(`/lots/${id}`)
+    return data
+  },
+}
+
+export type ReceptionPayload = {
+  supplier: string
+  note?: string
+  lines: Array<{
+    product: string
+    lot: string
+    quantity: number
+    status: 'A' | 'R'
+    buyPrice: number
+    sellPrice: number
+    expiryDate?: string | null
+    observation?: string
+  }>
+}
+
+export const receptionApi = {
+  list: async () => {
+    const { data } = await axiosInstance.get<Reception[]>('/receptions')
+    return data
+  },
+  get: async (id: string) => {
+    const { data } = await axiosInstance.get<Reception>(`/receptions/${id}`)
+    return data
+  },
+  create: async (payload: ReceptionPayload) => {
+    const { data } = await axiosInstance.post<Reception>('/receptions', payload)
+    return data
+  },
+  update: async (id: string, payload: ReceptionPayload) => {
+    const { data } = await axiosInstance.put<Reception>(`/receptions/${id}`, payload)
+    return data
+  },
+  remove: async (id: string) => {
+    const { data } = await axiosInstance.delete<{ message: string }>(`/receptions/${id}`)
+    return data
+  },
+}
+
 // ── Stock ────────────────────────────────────────────────────────────────────
 export const stockApi = {
   movements: async (params?: {
@@ -190,27 +251,8 @@ export const stockApi = {
     const { data } = await axiosInstance.get<StockMovement[]>('/stock/movements', { params })
     return data
   },
-  alerts: async () => {
-    const { data } = await axiosInstance.get<Product[]>('/stock/alerts')
-    return data
-  },
-  delivery: async (payload: { productId: string; quantity: number; note?: string }) => {
-    const { data } = await axiosInstance.post<{
-      movement: StockMovement
-      product: Product
-    }>('/stock/delivery', payload)
-    return data
-  },
-  adjust: async (payload: {
-    productId: string
-    quantity: number
-    type: 'in' | 'out'
-    note?: string
-  }) => {
-    const { data } = await axiosInstance.post<{ movement: StockMovement }>(
-      '/stock/adjust',
-      payload
-    )
+  positions: async () => {
+    const { data } = await axiosInstance.get<StockPosition[]>('/stock/positions')
     return data
   },
 }

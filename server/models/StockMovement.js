@@ -7,7 +7,7 @@ const stockMovementSchema = new mongoose.Schema(
     quantity: { type: Number, required: true, min: 1 },
     source: {
       type: String,
-      enum: ['order', 'supplier-delivery', 'manual'],
+      enum: ['order', 'supplier-delivery', 'manual', 'reception'],
       required: true,
     },
     referenceId: { type: mongoose.Schema.Types.ObjectId, default: null },

@@ -15,6 +15,8 @@ import { StockPage } from '@/pages/stock-page'
 import { SuppliersPage } from '@/pages/suppliers-page'
 import { CategoriesPage } from '@/pages/categories-page'
 import { ClientsPage } from '@/pages/clients-page'
+import { LotsPage } from '@/pages/lots-page'
+import { ReceptionsPage } from '@/pages/receptions-page'
 import { SettingsPage } from '@/pages/settings-page'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -37,7 +39,7 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 function DashboardLayout() {
   return (
     <SidebarProvider
-      className="min-h-svh w-full"
+      className="h-svh max-w-full overflow-hidden"
       style={
         {
           '--sidebar-width': '18rem',
@@ -48,7 +50,11 @@ function DashboardLayout() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <Outlet />
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="min-w-0 w-full">
+            <Outlet />
+          </div>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )
@@ -89,6 +95,22 @@ export default function App() {
           element={
             <RequireAdmin>
               <CategoriesPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="lots"
+          element={
+            <RequireAdmin>
+              <LotsPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="receptions"
+          element={
+            <RequireAdmin>
+              <ReceptionsPage />
             </RequireAdmin>
           }
         />

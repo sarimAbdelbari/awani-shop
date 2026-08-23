@@ -68,7 +68,7 @@ export function DashboardPage() {
     : []
 
   return (
-    <div className="flex flex-1 flex-col gap-8 p-4 md:p-6">
+    <div className="flex min-w-0 flex-1 flex-col gap-8 p-4 md:p-6">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-semibold tracking-tight">{t('dashboard.title')}</h2>
         <p className="text-muted-foreground text-sm capitalize">{today}</p>

@@ -26,6 +26,8 @@ import {
   WarehouseIcon,
   DistributionIcon,
   CombineIcon,
+  Layers01Icon,
+  PackageReceiveIcon,
 } from '@hugeicons/core-free-icons'
 import { useI18n } from '@/i18n'
 import { useAuth } from '@/context/AuthContext'
@@ -46,6 +48,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: '/dashboard/orders',
       icon: <HugeiconsIcon icon={Invoice01Icon} strokeWidth={2} />,
     },
+  ]
+
+  const purchasesNav = [
+    ...(isAdmin
+      ? [
+          {
+            title: t('nav.receptions'),
+            url: '/dashboard/receptions',
+            icon: <HugeiconsIcon icon={PackageReceiveIcon} strokeWidth={2} />,
+          },
+        ]
+      : []),
     {
       title: t('nav.stock'),
       url: '/dashboard/stock',
@@ -75,6 +89,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: t('nav.categories'),
             url: '/dashboard/categories',
             icon: <HugeiconsIcon icon={CombineIcon} strokeWidth={2} />,
+          },
+          {
+            title: t('nav.lots'),
+            url: '/dashboard/lots',
+            icon: <HugeiconsIcon icon={Layers01Icon} strokeWidth={2} />,
           },
         ]
       : []),
@@ -125,6 +144,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <NavMain items={topNav} />
+        <NavMain items={purchasesNav} label={t('nav.purchases')} />
         <NavMain items={masterDataNav} label={t('nav.masterData')} />
         <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
