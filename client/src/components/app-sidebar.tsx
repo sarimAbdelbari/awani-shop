@@ -28,7 +28,10 @@ import {
   CombineIcon,
   Layers01Icon,
   PackageReceiveIcon,
+  Wallet01Icon,
+  MoneySend01Icon,
 } from '@hugeicons/core-free-icons'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { useI18n } from '@/i18n'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -43,11 +46,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: '/dashboard',
       icon: <HugeiconsIcon icon={ChartHistogramIcon} strokeWidth={2} />,
     },
+  ]
+
+  const salesNav = [
     {
-      title: t('nav.orders'),
+      title: t('nav.venteDirecte'),
       url: '/dashboard/orders',
       icon: <HugeiconsIcon icon={Invoice01Icon} strokeWidth={2} />,
     },
+    {
+      title: t('nav.salesReport'),
+      url: '/dashboard/rapport',
+      icon: <HugeiconsIcon icon={ChartHistogramIcon} strokeWidth={2} />,
+    },
+    {
+      title: t('nav.caisse'),
+      url: '/dashboard/caisse',
+      icon: <HugeiconsIcon icon={Wallet01Icon} strokeWidth={2} />,
+    },
+    ...(isAdmin
+      ? [
+          {
+            title: t('nav.expenses'),
+            url: '/dashboard/frais',
+            icon: <HugeiconsIcon icon={MoneySend01Icon} strokeWidth={2} />,
+          },
+        ]
+      : []),
   ]
 
   const purchasesNav = [
@@ -64,6 +89,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t('nav.stock'),
       url: '/dashboard/stock',
       icon: <HugeiconsIcon icon={WarehouseIcon} strokeWidth={2} />,
+    },
+    {
+      title: t('nav.adjustments'),
+      url: '/dashboard/ajustements',
+      icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
     },
   ]
 
@@ -144,6 +174,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <NavMain items={topNav} />
+        <NavMain items={salesNav} label={t('nav.sales')} />
         <NavMain items={purchasesNav} label={t('nav.purchases')} />
         <NavMain items={masterDataNav} label={t('nav.masterData')} />
         <NavSecondary items={navSecondary} className="mt-auto" />
@@ -167,6 +198,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           >
             EN
           </Button>
+          <ThemeToggle className="size-7 shrink-0" />
         </div>
         <NavUser />
       </SidebarFooter>

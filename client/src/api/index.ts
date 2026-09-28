@@ -12,6 +12,11 @@ import type {
   DashboardStats,
   Lot,
   Reception,
+  Shift,
+  ShiftSnapshot,
+  StockAdjustment,
+  Expense,
+  ExpenseCategory,
 } from '../types'
 
 // ── Auth ────────────────────────────────────────────────────────────────────
@@ -169,15 +174,21 @@ export const orderApi = {
     return data
   },
   create: async (payload: {
-    clientId?: string
-    items: { productId: string; qty: number; discount?: number }[]
+    clientId?: string | null
+    items: {
+      productId: string
+      lotId: string
+      supplierId: string
+      qty: number
+      unitPrice: number
+    }[]
     note?: string
   }) => {
     const { data } = await axiosInstance.post<Order>('/orders', payload)
     return data
   },
-  stats: async () => {
-    const { data } = await axiosInstance.get<DashboardStats>('/orders/stats')
+  stats: async (params?: { from?: string; to?: string }) => {
+    const { data } = await axiosInstance.get<DashboardStats>('/orders/stats', { params })
     return data
   },
 }
@@ -265,6 +276,72 @@ export const settingsApi = {
   },
   update: async (payload: Partial<Settings>) => {
     const { data } = await axiosInstance.put<Settings>('/settings', payload)
+    return data
+  },
+}
+
+export const shiftApi = {
+  current: async () => {
+    const { data } = await axiosInstance.get<ShiftSnapshot>('/shifts/current')
+    return data
+  },
+  list: async () => {
+    const { data } = await axiosInstance.get<Shift[]>('/shifts')
+    return data
+  },
+  open: async (openingFloat: number) => {
+    const { data } = await axiosInstance.post<ShiftSnapshot>('/shifts', { openingFloat })
+    return data
+  },
+  close: async (id: string, payload: { countedCash: number; note?: string }) => {
+    const { data } = await axiosInstance.post<Shift>(`/shifts/${id}/close`, payload)
+    return data
+  },
+}
+
+export const adjustmentApi = {
+  list: async () => {
+    const { data } = await axiosInstance.get<StockAdjustment[]>('/adjustments')
+    return data
+  },
+  create: async (payload: {
+    productId: string
+    lotId: string
+    supplierId: string
+    reason: StockAdjustment['reason']
+    quantity?: number
+    countedQty?: number
+    observation: string
+  }) => {
+    const { data } = await axiosInstance.post<StockAdjustment>('/adjustments', payload)
+    return data
+  },
+}
+
+export const expenseApi = {
+  list: async (params?: { from?: string; to?: string }) => {
+    const { data } = await axiosInstance.get<Expense[]>('/expenses', { params })
+    return data
+  },
+  create: async (payload: {
+    date: string
+    name: string
+    category: ExpenseCategory
+    amount: number
+    note?: string
+  }) => {
+    const { data } = await axiosInstance.post<Expense>('/expenses', payload)
+    return data
+  },
+  update: async (
+    id: string,
+    payload: { date: string; name: string; category: ExpenseCategory; amount: number; note?: string }
+  ) => {
+    const { data } = await axiosInstance.put<Expense>(`/expenses/${id}`, payload)
+    return data
+  },
+  remove: async (id: string) => {
+    const { data } = await axiosInstance.delete<{ message: string }>(`/expenses/${id}`)
     return data
   },
 }

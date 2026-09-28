@@ -11,6 +11,8 @@ const stockMovementSchema = new mongoose.Schema(
       required: true,
     },
     referenceId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', default: null },
+    lot: { type: mongoose.Schema.Types.ObjectId, ref: 'Lot', default: null },
     note: { type: String, trim: true, default: '' },
     date: { type: Date, default: Date.now },
   }

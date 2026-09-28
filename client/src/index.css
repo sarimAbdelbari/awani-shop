@@ -16,7 +16,7 @@
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -29,15 +29,14 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+.dark {
+  color-scheme: dark;
+  --shadow:
+    rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+.dark #social .button-icon {
+  filter: invert(1) brightness(2);
 }
 
 html,
@@ -155,5 +154,46 @@ code {
   }
   html {
     @apply font-sans;
+  }
+}
+
+.vente-ticket {
+  display: none;
+}
+
+@media print {
+  #root {
+    display: none !important;
+  }
+
+  .vente-ticket {
+    display: block !important;
+    width: 72mm;
+    padding: 4mm;
+    color: #111;
+    background: #fff;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .vente-ticket h1 {
+    margin: 0 0 4px;
+    font-size: 16px;
+  }
+
+  .vente-ticket p,
+  .vente-ticket ul {
+    margin: 0 0 4px;
+  }
+
+  .vente-ticket ul {
+    padding: 0;
+    list-style: none;
+  }
+
+  .vente-ticket .ticket-total {
+    font-size: 14px;
+    font-weight: 700;
   }
 }

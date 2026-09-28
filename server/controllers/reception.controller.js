@@ -124,6 +124,7 @@ async function syncReceptionMovements(reception) {
       quantity: line.quantity,
       source: 'reception',
       referenceId: reception._id,
+      supplier: reception.supplier,
       note: reception.number,
       date: reception.createdAt || new Date(),
     }))

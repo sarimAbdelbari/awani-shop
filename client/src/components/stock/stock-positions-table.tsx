@@ -140,6 +140,16 @@ export function StockPositionsTable({
         ),
         filterFn: columnTextFilterFn,
       },
+      {
+        id: 'lastSupplier',
+        accessorFn: (row) => row.supplier?.fullName ?? '',
+        meta: { label: t('stock.lastSupplier') },
+        header: ({ column }) => (
+          <SortableHeader column={column} title={t('stock.lastSupplier')} />
+        ),
+        cell: ({ row }) => row.original.supplier?.fullName ?? '—',
+        filterFn: columnTextFilterFn,
+      },
     ],
     [t]
   )
@@ -152,6 +162,7 @@ export function StockPositionsTable({
         p.lot?.code,
         p.lot?.name,
         p.lastReceptionNumber,
+        p.supplier?.fullName,
       ]),
     []
   )
@@ -160,7 +171,7 @@ export function StockPositionsTable({
     data: positions,
     columns,
     getRowId: (row, index) =>
-      `${row.product?._id ?? 'p'}-${row.lot?._id ?? 'l'}-${index}`,
+      `${row.product?._id ?? 'p'}-${row.lot?._id ?? 'l'}-${row.supplier?._id ?? 's'}-${index}`,
     state: {
       sorting,
       globalFilter,

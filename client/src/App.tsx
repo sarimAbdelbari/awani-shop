@@ -10,6 +10,10 @@ import { useAuth } from '@/context/AuthContext'
 import { LoginPage } from '@/pages/login-page'
 import { DashboardPage } from '@/pages/dashboard-page'
 import { OrdersPage } from '@/pages/orders-page'
+import { SalesReportPage } from '@/pages/sales-report-page'
+import { CaissePage } from '@/pages/caisse-page'
+import { AdjustmentsPage } from '@/pages/adjustments-page'
+import { ExpensesPage } from '@/pages/expenses-page'
 import { ProductsPage } from '@/pages/products-page'
 import { StockPage } from '@/pages/stock-page'
 import { SuppliersPage } from '@/pages/suppliers-page'
@@ -77,6 +81,9 @@ export default function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="orders" element={<OrdersPage />} />
+        <Route path="rapport" element={<SalesReportPage />} />
+        <Route path="caisse" element={<CaissePage />} />
+        <Route path="ajustements" element={<AdjustmentsPage />} />
         <Route path="clients" element={<ClientsPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="stock" element={<StockPage />} />
@@ -111,6 +118,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <ReceptionsPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="frais"
+          element={
+            <RequireAdmin>
+              <ExpensesPage />
             </RequireAdmin>
           }
         />

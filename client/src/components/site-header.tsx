@@ -7,6 +7,10 @@ import {
   CombineIcon,
   Database01Icon,
   Layers01Icon,
+  Invoice01Icon,
+  ChartHistogramIcon,
+  Wallet01Icon,
+  MoneySend01Icon,
   PackageReceiveIcon,
   WarehouseIcon,
   ShoppingBag01Icon,
@@ -24,8 +28,8 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useI18n } from '@/i18n'
 
 type CrumbRoute = {
-  parentKey: string
-  parentIcon: IconSvgElement
+  parentKey?: string
+  parentIcon?: IconSvgElement
   labelKey: string
   icon: IconSvgElement
 }
@@ -73,11 +77,43 @@ const CRUMB_ROUTES: Record<string, CrumbRoute> = {
     labelKey: 'nav.stock',
     icon: WarehouseIcon,
   },
+  '/dashboard/orders': {
+    parentKey: 'nav.sales',
+    parentIcon: Invoice01Icon,
+    labelKey: 'nav.venteDirecte',
+    icon: Invoice01Icon,
+  },
+  '/dashboard/rapport': {
+    parentKey: 'nav.sales',
+    parentIcon: Invoice01Icon,
+    labelKey: 'nav.salesReport',
+    icon: ChartHistogramIcon,
+  },
+  '/dashboard/caisse': {
+    parentKey: 'nav.sales',
+    parentIcon: Invoice01Icon,
+    labelKey: 'nav.caisse',
+    icon: Wallet01Icon,
+  },
+  '/dashboard/frais': {
+    parentKey: 'nav.sales',
+    parentIcon: Invoice01Icon,
+    labelKey: 'nav.expenses',
+    icon: MoneySend01Icon,
+  },
+  '/dashboard/ajustements': {
+    parentKey: 'nav.purchases',
+    parentIcon: ShoppingBag01Icon,
+    labelKey: 'nav.adjustments',
+    icon: Package01Icon,
+  },
+  '/dashboard': {
+    labelKey: 'nav.statistiques',
+    icon: ChartHistogramIcon,
+  },
 }
 
 const SIMPLE_TITLES: Record<string, string> = {
-  '/dashboard': 'nav.statistiques',
-  '/dashboard/orders': 'nav.orders',
   '/dashboard/settings': 'nav.settings',
 }
 
@@ -100,17 +136,21 @@ export function SiteHeader() {
         {crumb ? (
           <Breadcrumb>
             <BreadcrumbList className="sm:gap-2">
-              <BreadcrumbItem>
-                <span className="text-muted-foreground inline-flex items-center gap-1.5 text-sm font-medium">
-                  <HugeiconsIcon
-                    icon={crumb.parentIcon}
-                    strokeWidth={2}
-                    className="size-3.5 opacity-70"
-                  />
-                  <span className="hidden sm:inline">{t(crumb.parentKey)}</span>
-                </span>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
+              {crumb.parentKey && crumb.parentIcon ? (
+                <>
+                  <BreadcrumbItem>
+                    <span className="text-muted-foreground inline-flex items-center gap-1.5 text-sm font-medium">
+                      <HugeiconsIcon
+                        icon={crumb.parentIcon}
+                        strokeWidth={2}
+                        className="size-3.5 opacity-70"
+                      />
+                      <span className="hidden sm:inline">{t(crumb.parentKey)}</span>
+                    </span>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                </>
+              ) : null}
               <BreadcrumbItem>
                 <BreadcrumbPage className="bg-primary/10 text-foreground inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-sm font-semibold">
                   <HugeiconsIcon

@@ -28,6 +28,9 @@ app.use('/api/categories', require('./routes/category.routes'));
 app.use('/api/lots', require('./routes/lot.routes'));
 app.use('/api/receptions', require('./routes/reception.routes'));
 app.use('/api/settings', require('./routes/settings.routes'));
+app.use('/api/shifts', require('./routes/shift.routes'));
+app.use('/api/adjustments', require('./routes/adjustment.routes'));
+app.use('/api/expenses', require('./routes/expense.routes'));
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

@@ -88,22 +88,26 @@ export interface StockPosition {
   nearestExpiry: string | null
   lastReceptionAt: string
   lastReceptionNumber: string
+  supplier: Pick<Supplier, '_id' | 'fullName'> | null
 }
 
 export interface OrderItem {
-  product: Product | string
+  product: Pick<Product, '_id' | 'code' | 'name'> | string
+  lot: Pick<Lot, '_id' | 'code' | 'name'> | string
+  supplier: Pick<Supplier, '_id' | 'fullName'> | string
   qty: number
+  catalogPrice: number
   unitPrice: number
-  discount: number
+  buyPrice?: number | null
   lineTotal: number
 }
 
 export interface Order {
   _id: string
-  client: Client | null
+  number: string
+  client: Pick<Client, '_id' | 'fullName' | 'phone' | 'loyaltyPoints'> | null
   items: OrderItem[]
   subtotal: number
-  discountTotal: number
   total: number
   createdBy: { name: string } | null
   note: string
@@ -117,6 +121,8 @@ export interface StockMovement {
   quantity: number
   source: 'order' | 'supplier-delivery' | 'manual' | 'reception'
   referenceId: string | null
+  supplier: Pick<Supplier, '_id' | 'fullName'> | null
+  lot: Pick<Lot, '_id' | 'code' | 'name'> | null
   note: string
   date: string
 }
@@ -130,10 +136,67 @@ export interface Settings {
 }
 
 export interface DashboardStats {
-  revenue30d: number
-  orders30d: number
-  totalClients: number
-  lowStockCount: number
-  dailyRevenue: { date: string; revenue: number }[]
-  topProducts: { name: string; qty: number }[]
+  caToday: number
+  ticketsToday: number
+  caPeriod: number
+  margePeriod: number
+  resultatPeriod: number
+  days: { date: string; ca: number; marge: number }[]
+  topProducts: { name: string; qty: number; marge: number }[]
+  fraisByCategory: { category: string; amount: number }[]
+  lowPiles: {
+    productCode: string
+    productName: string
+    lotCode: string
+    supplierName: string
+    quantity: number
+  }[]
+}
+
+export interface Shift {
+  _id: string
+  status: 'open' | 'closed'
+  openingFloat: number
+  openedBy: { name: string } | null
+  openedAt: string
+  closedBy: { name: string } | null
+  closedAt: string | null
+  countedCash: number | null
+  expectedCash: number | null
+  ecart: number | null
+  note: string
+}
+
+export interface ShiftSnapshot {
+  shift: Shift | null
+  ticketCount: number
+  ticketTotal: number
+  expectedCash: number
+}
+
+export type AdjustmentReason = 'casse' | 'perte' | 'inventaire'
+
+export interface StockAdjustment {
+  _id: string
+  product: Pick<Product, '_id' | 'code' | 'name'> | null
+  lot: Pick<Lot, '_id' | 'code' | 'name'> | null
+  supplier: Pick<Supplier, '_id' | 'fullName'> | null
+  reason: AdjustmentReason
+  quantity: number
+  direction: 'in' | 'out'
+  observation: string
+  createdBy: { name: string } | null
+  createdAt: string
+}
+
+export type ExpenseCategory = 'loyer' | 'electricite' | 'eau' | 'salaires' | 'autre'
+
+export interface Expense {
+  _id: string
+  date: string
+  name: string
+  category: ExpenseCategory
+  amount: number
+  note: string
+  createdBy: { name: string } | null
 }
