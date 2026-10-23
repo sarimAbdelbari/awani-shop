@@ -49,7 +49,7 @@ export function DeleteProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" showCloseButton={!deleting}>
+      <DialogContent className="h-auto max-h-none min-h-0 overflow-visible sm:max-w-md" showCloseButton={!deleting}>
         <DialogHeader>
           <DialogTitle>{t('common.delete')}</DialogTitle>
           <DialogDescription>

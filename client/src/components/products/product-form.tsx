@@ -130,7 +130,7 @@ export function ProductForm({
 
   const categoryOptions: CategoryOption[] = categories.map((c) => ({
     value: c._id,
-    label: `${c.code} — ${c.name}`,
+    label: `${c.code} - ${c.name}`,
   }))
 
   const selectedCategory =
@@ -175,7 +175,7 @@ export function ProductForm({
         </Label>
         {categoryLocked ? (
           <>
-            <Input value={lockedCategoryLabel || '—'} disabled />
+            <Input value={lockedCategoryLabel || '-'} disabled />
             <p className="text-muted-foreground text-xs">{t('products.categoryLocked')}</p>
           </>
         ) : (

@@ -10,9 +10,11 @@ export type DraftLine = {
   lotCode: string
   lotName: string
   supplierName: string
+  buyPrice: number
   catalogPrice: number
   unitPrice: number
   qty: number
+  allowPriceChange: boolean
 }
 
 export type DraftTicket = {
@@ -22,8 +24,24 @@ export type DraftTicket = {
 
 const STORAGE_KEY = 'awani_vente_drafts_v1'
 
-export function pileKey(productId: string, lotId: string, supplierId: string) {
-  return `${productId}|${lotId}|${supplierId}`
+export function moneyPart(value: number | string | null | undefined) {
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) return '0.00'
+  return amount.toFixed(2)
+}
+
+export function pileKey(
+  productId: string,
+  lotId: string,
+  supplierId: string,
+  buyPrice: number | string,
+  sellPrice: number | string
+) {
+  return `${productId}|${lotId}|${supplierId}|${moneyPart(buyPrice)}|${moneyPart(sellPrice)}`
+}
+
+export function linePileKey(line: Pick<DraftLine, 'productId' | 'lotId' | 'supplierId' | 'buyPrice' | 'catalogPrice'>) {
+  return pileKey(line.productId, line.lotId, line.supplierId, line.buyPrice, line.catalogPrice)
 }
 
 export function emptyTicket(): DraftTicket {
@@ -44,7 +62,7 @@ export function reservedQty(tickets: DraftTicket[], key: string, excludeLineKey?
       sum +
       ticket.lines.reduce((lineSum, line) => {
         if (excludeLineKey && line.key === excludeLineKey) return lineSum
-        if (pileKey(line.productId, line.lotId, line.supplierId) !== key) return lineSum
+        if (linePileKey(line) !== key) return lineSum
         return lineSum + line.qty
       }, 0),
     0
@@ -68,6 +86,7 @@ function isLine(value: unknown): value is DraftLine {
     typeof line.qty === 'number' &&
     line.qty >= 1 &&
     typeof line.unitPrice === 'number' &&
+    typeof line.buyPrice === 'number' &&
     typeof line.catalogPrice === 'number'
   )
 }
@@ -82,7 +101,12 @@ export function loadDrafts(): { active: number; tickets: DraftTicket[] } | null 
       const draft = ticket as DraftTicket
       return {
         client: isClient(draft?.client) ? draft.client : null,
-        lines: Array.isArray(draft?.lines) ? draft.lines.filter(isLine) : [],
+        lines: Array.isArray(draft?.lines)
+          ? draft.lines.filter(isLine).map((line) => ({
+              ...line,
+              allowPriceChange: line.allowPriceChange !== false,
+            }))
+          : [],
       }
     })
     const active = typeof parsed.active === 'number' && parsed.active >= 0 && parsed.active < 4

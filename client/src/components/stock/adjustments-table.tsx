@@ -69,7 +69,7 @@ export function AdjustmentsTable({ rows, loading = false }: AdjustmentsTableProp
         meta: { label: t('nav.products') },
         header: ({ column }) => <SortableHeader column={column} title={t('nav.products')} />,
         cell: ({ row }) =>
-          row.original.product ? `${row.original.product.code} — ${row.original.product.name}` : '—',
+          row.original.product ? `${row.original.product.code} - ${row.original.product.name}` : '-',
         filterFn: columnTextFilterFn,
       },
       {
@@ -79,7 +79,7 @@ export function AdjustmentsTable({ rows, loading = false }: AdjustmentsTableProp
         meta: { label: t('stock.lot') },
         header: t('stock.lot'),
         cell: ({ row }) =>
-          `${row.original.lot?.code ?? '—'} — ${row.original.supplier?.fullName ?? '—'}`,
+          `${row.original.lot?.code ?? '-'} - ${row.original.supplier?.fullName ?? '-'}`,
         filterFn: columnTextFilterFn,
       },
       {

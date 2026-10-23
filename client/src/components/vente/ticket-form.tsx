@@ -1,34 +1,108 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react'
+import { Coins01Icon, HashtagIcon, Store01Icon, TextFontIcon } from '@hugeicons/core-free-icons'
 
 import { SearchList } from '@/components/vente/search-list'
 import { LineRow } from '@/components/vente/line-row'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { clientApi } from '@/api'
 import { getApiErrorMessage } from '@/api/axios'
 import { useI18n } from '@/i18n'
 import {
+  linePileKey,
   pileKey,
   reservedQty,
   type DraftLine,
   type DraftTicket,
 } from '@/lib/vente-drafts'
 import {
+  comparePileSearch,
   fold,
   formatMoney,
+  matchPileQuery,
   matchWildcard,
   parseMoney,
   parseQty,
   searchRank,
+  type PileSearchFields,
+  type PileSearchTarget,
 } from '@/lib/vente-search'
 import type { Client, Product, StockPosition } from '@/types'
 import { error_toast } from '@/utils/toastNotification'
 
 export type CaisseActions = {
-  focusClient: () => void
+  focusProduct: () => void
   newClient: () => void
   escape: () => void
   validate: () => void
+}
+
+const FILTER_KEY = 'awani.vente.searchFilters'
+
+const defaultFilters: PileSearchFields = {
+  name: true,
+  supplier: true,
+  quantity: true,
+  price: true,
+}
+
+function loadFilters(): PileSearchFields {
+  try {
+    const raw = sessionStorage.getItem(FILTER_KEY)
+    if (!raw) return defaultFilters
+    const parsed = JSON.parse(raw) as Partial<PileSearchFields>
+    return {
+      name: parsed.name !== false,
+      supplier: parsed.supplier !== false,
+      quantity: parsed.quantity !== false,
+      price: parsed.price !== false,
+    }
+  } catch {
+    return defaultFilters
+  }
+}
+
+function KeyHint({ children }: { children: string }) {
+  return (
+    <kbd className="rounded border border-current/25 bg-current/10 px-1 py-0.5 font-sans text-[10px] leading-none">
+      {children}
+    </kbd>
+  )
+}
+
+function FilterToggle({
+  icon,
+  label,
+  checked,
+  onCheckedChange,
+}: {
+  icon: IconSvgElement
+  label: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <label className="flex cursor-pointer flex-col items-center gap-1">
+          <HugeiconsIcon
+            icon={icon}
+            strokeWidth={2}
+            className={checked ? 'size-4' : 'text-muted-foreground size-4'}
+          />
+          <Checkbox
+            checked={checked}
+            onCheckedChange={(value) => onCheckedChange(value === true)}
+            aria-label={label}
+          />
+        </label>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
 }
 
 type TicketFormProps = {
@@ -53,7 +127,13 @@ function roomFor(
   excludeLineKey?: string
 ) {
   if (!pile.product || !pile.lot || !pile.supplier) return 0
-  const key = pileKey(pile.product._id, pile.lot._id, pile.supplier._id)
+  const key = pileKey(
+    pile.product._id,
+    pile.lot._id,
+    pile.supplier._id,
+    pile.lastBuyPrice,
+    pile.lastSellPrice
+  )
   return pile.quantity - reservedQty(tickets, key, excludeLineKey)
 }
 
@@ -91,12 +171,10 @@ export function TicketForm({
   const [productQuery, setProductQuery] = useState('')
   const [productDismissed, setProductDismissed] = useState(false)
   const [productHighlight, setProductHighlight] = useState(0)
-  const [pendingProduct, setPendingProduct] = useState<Product | null>(null)
-  const [pileOpen, setPileOpen] = useState(false)
-  const [pileHighlight, setPileHighlight] = useState(0)
   const [selectedPile, setSelectedPile] = useState<StockPosition | null>(null)
   const [qtyText, setQtyText] = useState('1')
   const [priceText, setPriceText] = useState('')
+  const [filters, setFilters] = useState<PileSearchFields>(loadFilters)
 
   const clientMatches = clients
     .filter((client) =>
@@ -109,15 +187,25 @@ export function TicketForm({
     )
     .slice(0, 30)
 
-  const productMatches = products
-    .filter((product) =>
-      matchWildcard(productQuery, `${product.code} ${product.name} ${product.qrCode}`)
-    )
-    .sort(
-      (a, b) =>
-        searchRank(productQuery, a.code, a.name) - searchRank(productQuery, b.code, b.name)
-    )
+  const sellable = positions
+    .filter((pile) => pile.product && pile.lot && pile.supplier && pile.quantity > 0)
+    .map((pile) => {
+      const available = Math.max(0, roomFor(pile, tickets))
+      const price = pile.lastSellPrice ?? 0
+      const target: PileSearchTarget = {
+        code: pile.product?.code ?? '',
+        name: pile.product?.name ?? '',
+        supplier: pile.supplier?.fullName ?? '',
+        quantity: String(available),
+        prices: [String(price), price.toFixed(2)],
+      }
+      return { pile, available, target }
+    })
+  const pileMatches = sellable
+    .filter((row) => matchPileQuery(productQuery, row.target, filters))
+    .sort((a, b) => comparePileSearch(productQuery, a.target, b.target, filters))
     .slice(0, 30)
+    .map((row) => row.pile)
 
   const showClients = creating
     ? false
@@ -126,20 +214,22 @@ export function TicketForm({
     productQuery.trim().length > 0 &&
     !productDismissed &&
     !selectedPile &&
-    !pileOpen &&
-    productMatches.length > 0
-
-  const piles = pendingProduct
-    ? positions.filter((pile) => pile.product?._id === pendingProduct._id)
-    : []
+    pileMatches.length > 0
 
   const focusProduct = () => productRef.current?.focus()
+
+  const toggleFilter = (key: keyof PileSearchFields, checked: boolean) => {
+    setFilters((current) => {
+      const next = { ...current, [key]: checked }
+      sessionStorage.setItem(FILTER_KEY, JSON.stringify(next))
+      return next
+    })
+    setProductHighlight(0)
+  }
 
   const resetComposer = () => {
     setProductQuery('')
     setProductDismissed(false)
-    setPendingProduct(null)
-    setPileOpen(false)
     setSelectedPile(null)
     setQtyText('1')
     setPriceText('')
@@ -152,34 +242,12 @@ export function TicketForm({
       return
     }
     setSelectedPile(pile)
-    setPileOpen(false)
     setQtyText('1')
     setPriceText(String(pile.lastSellPrice ?? 0))
     if (pile.product) {
-      setProductQuery(`${pile.product.code} — ${pile.product.name}`)
+      setProductQuery(`${pile.product.code} - ${pile.product.name}`)
     }
     requestAnimationFrame(() => qtyRef.current?.focus())
-  }
-
-  const selectProduct = (product: Product) => {
-    const nextPiles = positions.filter((pile) => pile.product?._id === product._id)
-    const sellable = nextPiles.filter((pile) => roomFor(pile, tickets) > 0)
-    setPendingProduct(product)
-    setProductDismissed(true)
-    setProductQuery(`${product.code} — ${product.name}`)
-    if (sellable.length === 0) {
-      setPileOpen(nextPiles.length > 0)
-      setSelectedPile(null)
-      error_toast(t('orders.noPiles'))
-      return
-    }
-    if (sellable.length === 1) {
-      choosePile(sellable[0])
-      return
-    }
-    setSelectedPile(null)
-    setPileOpen(true)
-    setPileHighlight(nextPiles.findIndex((pile) => roomFor(pile, tickets) > 0))
   }
 
   const addLine = () => {
@@ -195,26 +263,23 @@ export function TicketForm({
       error_toast(t('orders.invalidPrice'))
       return
     }
-    const key = pileKey(selectedPile.product._id, selectedPile.lot._id, selectedPile.supplier._id)
+    const key = pileKey(
+      selectedPile.product._id,
+      selectedPile.lot._id,
+      selectedPile.supplier._id,
+      selectedPile.lastBuyPrice,
+      selectedPile.lastSellPrice
+    )
     const room = selectedPile.quantity - reservedQty(tickets, key)
     if (qty > room) {
       error_toast(`${t('orders.insufficientStock')} (${Math.max(0, room)})`)
       return
     }
-    const existing = ticket.lines.find(
-      (line) => pileKey(line.productId, line.lotId, line.supplierId) === key
-    )
+    const existing = ticket.lines.find((line) => linePileKey(line) === key && line.unitPrice === price)
     if (existing) {
       onLines(
         ticket.lines.map((line) =>
-          line.key === existing.key
-            ? {
-                ...line,
-                qty: line.qty + qty,
-                unitPrice: price,
-                catalogPrice: selectedPile.lastSellPrice,
-              }
-            : line
+          line.key === existing.key ? { ...line, qty: line.qty + qty } : line
         )
       )
     } else {
@@ -228,9 +293,11 @@ export function TicketForm({
         lotCode: selectedPile.lot.code,
         lotName: selectedPile.lot.name,
         supplierName: selectedPile.supplier.fullName,
+        buyPrice: selectedPile.lastBuyPrice,
         catalogPrice: selectedPile.lastSellPrice,
         unitPrice: price,
         qty,
+        allowPriceChange: selectedPile.allowPriceChange !== false,
       }
       onLines([...ticket.lines, line])
     }
@@ -271,13 +338,6 @@ export function TicketForm({
       requestAnimationFrame(() => clientRef.current?.focus())
       return
     }
-    if (pileOpen) {
-      setPileOpen(false)
-      setPendingProduct(null)
-      setProductQuery('')
-      focusProduct()
-      return
-    }
     if (showProducts) {
       setProductDismissed(true)
       return
@@ -288,14 +348,13 @@ export function TicketForm({
     }
     setProductQuery('')
     setSelectedPile(null)
-    setPendingProduct(null)
   }
 
   useEffect(() => {
     register({
-      focusClient: () => {
+      focusProduct: () => {
         if (creating) nameRef.current?.focus()
-        else clientRef.current?.focus()
+        else productRef.current?.focus()
       },
       newClient: () => {
         setCreating(true)
@@ -312,20 +371,157 @@ export function TicketForm({
     return (current + delta + count) % count
   }
 
-  const highlightedProduct = productMatches[productHighlight]
-  const highlightedPiles = highlightedProduct
-    ? positions.filter((pile) => pile.product?._id === highlightedProduct._id)
-    : []
-  const altPile = pileOpen
-    ? piles[pileHighlight]
-    : showProducts && highlightedPiles.length === 1
-      ? highlightedPiles[0]
-      : selectedPile
+  const altPile = selectedPile ?? (showProducts ? pileMatches[productHighlight] : null)
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="relative flex flex-col gap-2">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start">
+        <div className="relative flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex items-end gap-3">
+            <FilterToggle
+              icon={TextFontIcon}
+              label={t('orders.filterName')}
+              checked={filters.name}
+              onCheckedChange={(checked) => toggleFilter('name', checked)}
+            />
+            <FilterToggle
+              icon={Store01Icon}
+              label={t('orders.filterSupplier')}
+              checked={filters.supplier}
+              onCheckedChange={(checked) => toggleFilter('supplier', checked)}
+            />
+            <FilterToggle
+              icon={HashtagIcon}
+              label={t('orders.filterQuantity')}
+              checked={filters.quantity}
+              onCheckedChange={(checked) => toggleFilter('quantity', checked)}
+            />
+            <FilterToggle
+              icon={Coins01Icon}
+              label={t('orders.filterPrice')}
+              checked={filters.price}
+              onCheckedChange={(checked) => toggleFilter('price', checked)}
+            />
+          </div>
+          <label className="sr-only" htmlFor="vente-product">
+            {t('orders.searchProduct')}
+          </label>
+          <Input
+            id="vente-product"
+            ref={productRef}
+            tabIndex={1}
+            autoComplete="off"
+            role="combobox"
+            aria-expanded={showProducts}
+            aria-controls={productListId}
+            aria-activedescendant={
+              showProducts ? `${productListId}-opt-${productHighlight}` : undefined
+            }
+            placeholder={t('orders.searchProduct')}
+            value={productQuery}
+            onChange={(event) => {
+              setProductQuery(event.target.value)
+              setProductDismissed(false)
+              setProductHighlight(0)
+              setSelectedPile(null)
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                if (!showProducts) return
+                event.preventDefault()
+                setProductHighlight((current) =>
+                  moveIndex(current, event.key === 'ArrowDown' ? 1 : -1, pileMatches.length)
+                )
+                return
+              }
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                const exact = products.find(
+                  (product) =>
+                    product.qrCode && fold(product.qrCode) === fold(productQuery.trim())
+                )
+                if (exact) {
+                  const qrPiles = positions.filter(
+                    (pile) => pile.product?._id === exact._id && roomFor(pile, tickets) > 0
+                  )
+                  if (qrPiles.length === 1) {
+                    choosePile(qrPiles[0])
+                    return
+                  }
+                  if (qrPiles.length === 0) {
+                    error_toast(t('orders.noPiles'))
+                    return
+                  }
+                  setProductQuery(`${exact.code} - ${exact.name}`)
+                  setProductDismissed(false)
+                  setProductHighlight(0)
+                  return
+                }
+                const picked = pileMatches[productHighlight]
+                if (picked) choosePile(picked)
+              }
+            }}
+          />
+          {showProducts ? (
+            <SearchList
+              listId={productListId}
+              highlight={productHighlight}
+              options={pileMatches.map((pile) => {
+                const available = Math.max(0, roomFor(pile, tickets))
+                return {
+                  id: pileKey(
+                    pile.product?._id ?? '',
+                    pile.lot?._id ?? '',
+                    pile.supplier?._id ?? '',
+                    pile.lastBuyPrice,
+                    pile.lastSellPrice
+                  ),
+                  primary: `${pile.product?.code} - ${pile.product?.name}`,
+                  cells: [
+                    {
+                      text: `${pile.product?.code} - ${pile.product?.name}`,
+                      hint: pile.lot?.code,
+                      muted: !filters.name,
+                    },
+                    { text: pile.supplier?.fullName ?? '', muted: !filters.supplier },
+                    { text: String(available), muted: !filters.quantity, align: 'end' },
+                    {
+                      text: formatMoney(pile.lastSellPrice),
+                      muted: !filters.price,
+                      align: 'end',
+                    },
+                  ],
+                }
+              })}
+              onPick={(index) => {
+                const picked = pileMatches[index]
+                if (picked) choosePile(picked)
+              }}
+            />
+          ) : null}
+          <p className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <span className="inline-flex items-center gap-1">
+              <KeyHint>{t('orders.keyEnter')}</KeyHint>
+              {t('orders.shortcutPick')}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <KeyHint>Alt</KeyHint>
+              {t('orders.shortcutBuy')}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <KeyHint>{t('orders.keyEsc')}</KeyHint>
+              {t('orders.shortcutClear')}
+            </span>
+            <span>{t('orders.commaHint')}</span>
+          </p>
+          {altHeld && altPile?.lastBuyPrice != null ? (
+            <p className="text-chart-1 text-sm font-medium tabular-nums">
+              {t('orders.buyPrice')} {formatMoney(altPile.lastBuyPrice)}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="relative flex w-full flex-col gap-2 md:w-56">
           <div className="flex items-center justify-between gap-2">
             <label className="text-sm font-medium" htmlFor="vente-client">
               {t('orders.searchClient')}
@@ -342,7 +538,7 @@ export function TicketForm({
             <div className="flex flex-col gap-2">
               <Input
                 ref={nameRef}
-                tabIndex={1}
+                tabIndex={2}
                 autoComplete="off"
                 placeholder={t('orders.clientName')}
                 aria-label={t('orders.clientName')}
@@ -383,7 +579,8 @@ export function TicketForm({
               <Input
                 id="vente-client"
                 ref={clientRef}
-                tabIndex={1}
+                tabIndex={2}
+                className="h-8"
                 autoComplete="off"
                 role="combobox"
                 aria-expanded={showClients}
@@ -441,12 +638,13 @@ export function TicketForm({
                   }}
                 />
               ) : null}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button type="button" variant="outline" tabIndex={-1} onClick={() => {
                   setCreating(true)
                   requestAnimationFrame(() => nameRef.current?.focus())
                 }}>
                   {t('orders.newClient')}
+                  <KeyHint>F8</KeyHint>
                 </Button>
                 {ticket.client ? (
                   <Button type="button" variant="ghost" tabIndex={-1} onClick={() => onClient(null)}>
@@ -458,131 +656,7 @@ export function TicketForm({
           )}
         </div>
 
-        <div className="relative flex flex-col gap-2">
-          <label className="text-sm font-medium" htmlFor="vente-product">
-            {t('orders.searchProduct')}
-          </label>
-          <Input
-            id="vente-product"
-            ref={productRef}
-            tabIndex={4}
-            autoComplete="off"
-            role="combobox"
-            aria-expanded={showProducts || pileOpen}
-            aria-controls={productListId}
-            aria-activedescendant={
-              showProducts ? `${productListId}-opt-${productHighlight}` : undefined
-            }
-            placeholder={t('orders.searchProduct')}
-            value={productQuery}
-            onChange={(event) => {
-              setProductQuery(event.target.value)
-              setProductDismissed(false)
-              setProductHighlight(0)
-              setSelectedPile(null)
-              setPileOpen(false)
-              setPendingProduct(null)
-            }}
-            onKeyDown={(event) => {
-              if (pileOpen) {
-                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-                  event.preventDefault()
-                  const delta = event.key === 'ArrowDown' ? 1 : -1
-                  setPileHighlight((current) => {
-                    if (piles.length === 0) return 0
-                    let next = current
-                    for (let step = 0; step < piles.length; step += 1) {
-                      next = moveIndex(next, delta, piles.length)
-                      if (roomFor(piles[next], tickets) > 0) return next
-                    }
-                    return current
-                  })
-                  return
-                }
-                if (event.key === 'Enter') {
-                  event.preventDefault()
-                  const pile = piles[pileHighlight]
-                  if (pile) choosePile(pile)
-                  return
-                }
-              }
-              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-                if (!showProducts) return
-                event.preventDefault()
-                setProductHighlight((current) =>
-                  moveIndex(current, event.key === 'ArrowDown' ? 1 : -1, productMatches.length)
-                )
-                return
-              }
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                const exact = products.find(
-                  (product) =>
-                    product.qrCode && fold(product.qrCode) === fold(productQuery.trim())
-                )
-                if (exact) {
-                  selectProduct(exact)
-                  return
-                }
-                const picked = productMatches[productHighlight]
-                if (picked) selectProduct(picked)
-              }
-            }}
-          />
-          {showProducts ? (
-            <SearchList
-              listId={productListId}
-              highlight={productHighlight}
-              options={productMatches.map((product) => ({
-                id: product._id,
-                primary: `${product.code} — ${product.name}`,
-                secondary: product.qrCode || undefined,
-              }))}
-              onPick={(index) => {
-                const picked = productMatches[index]
-                if (picked) selectProduct(picked)
-              }}
-            />
-          ) : null}
-          {altHeld && altPile?.lastBuyPrice != null ? (
-            <p className="text-sm tabular-nums">
-              {t('orders.buyPrice')} {formatMoney(altPile.lastBuyPrice)}
-            </p>
-          ) : null}
-        </div>
       </div>
-
-      {pileOpen && piles.length > 0 ? (
-        <div className="flex flex-col gap-2" role="listbox" aria-label={t('orders.pickPile')}>
-          <p className="text-sm font-medium">{t('orders.pickPile')}</p>
-          {piles.map((pile, index) => {
-            const room = roomFor(pile, tickets)
-            const disabled = room <= 0
-            return (
-              <button
-                key={pileKey(
-                  pile.product?._id ?? '',
-                  pile.lot?._id ?? String(index),
-                  pile.supplier?._id ?? ''
-                )}
-                type="button"
-                tabIndex={disabled ? -1 : 5}
-                disabled={disabled}
-                className={
-                  index === pileHighlight
-                    ? 'bg-accent rounded-lg border px-3 py-2 text-left text-sm disabled:opacity-40'
-                    : 'hover:bg-muted rounded-lg border px-3 py-2 text-left text-sm disabled:opacity-40'
-                }
-                onMouseEnter={() => setPileHighlight(index)}
-                onClick={() => choosePile(pile)}
-              >
-                {pile.lot?.code} — {pile.supplier?.fullName} — {t('orders.available')} {Math.max(0, room)} —{' '}
-                {formatMoney(pile.lastSellPrice)}
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
 
       {selectedPile ? (
         <div className="grid gap-3 md:grid-cols-[8rem_auto_auto_minmax(0,1fr)_auto] md:items-end">
@@ -603,12 +677,15 @@ export function TicketForm({
                 }
               }}
             />
+            <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+              <KeyHint>{t('orders.keyEnter')}</KeyHint>
+            </span>
           </div>
           <Button
             type="button"
             variant="outline"
             tabIndex={7}
-            className="md:mb-0"
+            className="md:mb-5"
             onClick={() => {
               const current = parseQty(qtyText) ?? 1
               setQtyText(String(current + 1))
@@ -620,6 +697,7 @@ export function TicketForm({
             type="button"
             variant="outline"
             tabIndex={8}
+            className="md:mb-5"
             onClick={() => {
               const current = parseQty(qtyText) ?? 1
               setQtyText(String(Math.max(1, current - 1)))
@@ -639,6 +717,11 @@ export function TicketForm({
               placeholder={t('orders.realPrice')}
               value={priceText}
               onChange={(event) => setPriceText(event.target.value)}
+              className={
+                selectedPile.allowPriceChange === false
+                  ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30'
+                  : undefined
+              }
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
                   event.preventDefault()
@@ -660,9 +743,13 @@ export function TicketForm({
                 event.preventDefault()
               }}
             />
+            {selectedPile.allowPriceChange === false ? (
+              <p className="text-destructive text-xs">{t('orders.fixedPrice')}</p>
+            ) : null}
           </div>
           <Button type="button" tabIndex={10} onClick={addLine}>
             {t('orders.addToInvoice')}
+            <KeyHint>{t('orders.keyEnter')}</KeyHint>
           </Button>
         </div>
       ) : null}
@@ -671,12 +758,14 @@ export function TicketForm({
         {ticket.lines.map((line, index) => {
           const pile = positions.find(
             (row) =>
-              row.product?._id === line.productId &&
-              row.lot?._id === line.lotId &&
-              row.supplier?._id === line.supplierId
+              row.product &&
+              row.lot &&
+              row.supplier &&
+              pileKey(row.product._id, row.lot._id, row.supplier._id, row.lastBuyPrice, row.lastSellPrice) ===
+                linePileKey(line)
           )
           const maxQty = pile
-            ? pile.quantity - reservedQty(tickets, pileKey(line.productId, line.lotId, line.supplierId), line.key)
+            ? pile.quantity - reservedQty(tickets, linePileKey(line), line.key)
             : line.qty
           return (
             <LineRow
@@ -685,7 +774,7 @@ export function TicketForm({
               tabQty={20 + index * 2}
               tabPrice={21 + index * 2}
               altHeld={altHeld}
-              buyPrice={pile?.lastBuyPrice ?? null}
+              buyPrice={line.buyPrice}
               maxQty={Math.max(0, maxQty)}
               onFocus={() => undefined}
               onQty={(qty) => {
@@ -704,14 +793,12 @@ export function TicketForm({
         })}
       </div>
 
-      <div className="bg-background sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t py-3">
-        <p className="text-muted-foreground text-xs">{t('orders.shortcuts')}</p>
-        <div className="flex items-center gap-4">
-          <p className="text-3xl font-semibold tabular-nums">{formatMoney(ticket.lines.reduce((sum, line) => sum + line.unitPrice * line.qty, 0))}</p>
-          <Button type="button" tabIndex={500} size="lg" disabled={saving || !shiftOpen} onClick={onValidate}>
-            {t('orders.encaisser')}
-          </Button>
-        </div>
+      <div className="bg-background sticky bottom-0 flex flex-wrap items-center justify-end gap-4 border-t py-3">
+        <p className="text-3xl font-semibold tabular-nums">{formatMoney(ticket.lines.reduce((sum, line) => sum + line.unitPrice * line.qty, 0))}</p>
+        <Button type="button" tabIndex={500} size="lg" disabled={saving || !shiftOpen} onClick={onValidate}>
+          {t('orders.encaisser')}
+          <KeyHint>F9</KeyHint>
+        </Button>
       </div>
     </div>
   )

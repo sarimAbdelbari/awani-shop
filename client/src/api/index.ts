@@ -175,10 +175,13 @@ export const orderApi = {
   },
   create: async (payload: {
     clientId?: string | null
+    cashReceived: number
     items: {
       productId: string
       lotId: string
       supplierId: string
+      buyPrice: number
+      catalogPrice: number
       qty: number
       unitPrice: number
     }[]
@@ -223,6 +226,7 @@ export type ReceptionPayload = {
     status: 'A' | 'R'
     buyPrice: number
     sellPrice: number
+    allowPriceChange?: boolean
     expiryDate?: string | null
     observation?: string
   }>
@@ -308,10 +312,12 @@ export const adjustmentApi = {
     productId: string
     lotId: string
     supplierId: string
+    buyPrice: number
+    sellPrice: number
     reason: StockAdjustment['reason']
     quantity?: number
     countedQty?: number
-    observation: string
+    observation?: string
   }) => {
     const { data } = await axiosInstance.post<StockAdjustment>('/adjustments', payload)
     return data

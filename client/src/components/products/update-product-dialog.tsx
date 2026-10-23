@@ -76,16 +76,16 @@ export function UpdateProductDialog({
   }
 
   const categoryLabel = product?.category
-    ? `${product.category.code} — ${product.category.name}`
-    : '—'
+    ? `${product.category.code} - ${product.category.name}`
+    : '-'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('products.editProduct')}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4">
           <ProductForm
             value={form}
             onChange={setForm}

@@ -24,6 +24,8 @@ const orderSchema = new mongoose.Schema(
     },
     subtotal: { type: Number, required: true, min: 0 },
     total: { type: Number, required: true, min: 0 },
+    cashReceived: { type: Number, min: 0 },
+    change: { type: Number, min: 0 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     note: { type: String, trim: true, default: '' },
   },

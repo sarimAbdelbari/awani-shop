@@ -28,7 +28,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { asSupplier } from '@/components/receptions/reception-helpers'
+import {
+  asSupplier,
+  receptionLineSearchFields,
+  receptionLinesLabel,
+  receptionMoney,
+  sumReceptionMoney,
+} from '@/components/receptions/reception-helpers'
+import { formatMoney } from '@/lib/vente-search'
 import { usePersistedColumnVisibility } from '@/hooks/use-persisted-column-visibility'
 import { usePersistedPagination } from '@/hooks/use-persisted-pagination'
 import { useI18n } from '@/i18n'
@@ -46,6 +53,12 @@ type ReceptionsTableProps = {
   onView: (reception: Reception) => void
   onEdit: (reception: Reception) => void
   onDelete: (reception: Reception) => void
+}
+
+function receptionTotals(reception: Reception) {
+  return sumReceptionMoney(
+    reception.lines.map((line) => receptionMoney(line.quantity, line.buyPrice, line.sellPrice))
+  )
 }
 
 function qtyByStatus(reception: Reception, status: 'A' | 'R') {
@@ -92,7 +105,7 @@ export function ReceptionsTable({
         header: ({ column }) => (
           <SortableHeader column={column} title={t('receptions.supplier')} />
         ),
-        cell: ({ row }) => asSupplier(row.original.supplier)?.fullName ?? '—',
+        cell: ({ row }) => asSupplier(row.original.supplier)?.fullName ?? '-',
         filterFn: columnTextFilterFn,
       },
       {
@@ -103,6 +116,23 @@ export function ReceptionsTable({
           <SortableHeader column={column} title={t('common.date')} />
         ),
         cell: ({ row }) => new Date(row.original.createdAt).toLocaleString('fr-DZ'),
+        filterFn: columnTextFilterFn,
+      },
+      {
+        id: 'lines',
+        accessorFn: (row) => receptionLinesLabel(row),
+        meta: { label: t('receptions.lines') },
+        header: ({ column }) => (
+          <SortableHeader column={column} title={t('receptions.lines')} />
+        ),
+        cell: ({ row }) => {
+          const label = receptionLinesLabel(row.original)
+          return (
+            <span className="block max-w-xs truncate" title={label}>
+              {label || '-'}
+            </span>
+          )
+        },
         filterFn: columnTextFilterFn,
       },
       {
@@ -121,8 +151,49 @@ export function ReceptionsTable({
         header: t('receptions.rejectedQty'),
         cell: ({ row }) => {
           const qty = qtyByStatus(row.original, 'R')
-          return qty > 0 ? <Badge variant="destructive">{qty}</Badge> : '—'
+          return qty > 0 ? <Badge variant="destructive">{qty}</Badge> : '-'
         },
+      },
+      {
+        id: 'buyTotal',
+        accessorFn: (row) => receptionTotals(row).buy,
+        meta: { label: t('receptions.buyTotal') },
+        header: ({ column }) => (
+          <SortableHeader column={column} title={t('receptions.buyTotal')} />
+        ),
+        cell: ({ row }) => (
+          <span className="tabular-nums">{formatMoney(receptionTotals(row.original).buy)}</span>
+        ),
+        filterFn: columnTextFilterFn,
+      },
+      {
+        id: 'sellTotal',
+        accessorFn: (row) => receptionTotals(row).sell,
+        meta: { label: t('receptions.sellTotal') },
+        header: ({ column }) => (
+          <SortableHeader column={column} title={t('receptions.sellTotal')} />
+        ),
+        cell: ({ row }) => (
+          <span className="tabular-nums">{formatMoney(receptionTotals(row.original).sell)}</span>
+        ),
+        filterFn: columnTextFilterFn,
+      },
+      {
+        id: 'difference',
+        accessorFn: (row) => receptionTotals(row).difference,
+        meta: { label: t('receptions.difference') },
+        header: ({ column }) => (
+          <SortableHeader column={column} title={t('receptions.difference')} />
+        ),
+        cell: ({ row }) => {
+          const difference = receptionTotals(row.original).difference
+          return (
+            <span className={`tabular-nums ${difference < 0 ? 'text-destructive' : ''}`}>
+              {formatMoney(difference)}
+            </span>
+          )
+        },
+        filterFn: columnTextFilterFn,
       },
       {
         id: 'updatedAt',
@@ -195,6 +266,8 @@ export function ReceptionsTable({
       makeGlobalFilterFn<Reception>((r) => [
         r.number,
         asSupplier(r.supplier)?.fullName,
+        receptionLinesLabel(r),
+        ...receptionLineSearchFields(r),
       ]),
     []
   )

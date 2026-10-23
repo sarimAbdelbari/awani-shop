@@ -86,7 +86,7 @@ export function ClientsTable({
         ),
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {row.original.phone || '—'}
+            {row.original.phone || '-'}
           </span>
         ),
         filterFn: columnTextFilterFn,

@@ -29,6 +29,7 @@ import {
 import { usePersistedColumnVisibility } from '@/hooks/use-persisted-column-visibility'
 import { usePersistedPagination } from '@/hooks/use-persisted-pagination'
 import { useI18n } from '@/i18n'
+import { newestFirst } from '@/lib/table/newest-first'
 import { columnTextFilterFn, makeGlobalFilterFn } from '@/lib/table/search'
 import type { StockPosition } from '@/types'
 
@@ -60,32 +61,37 @@ export function StockPositionsTable({
   const [columnVisibility, setColumnVisibility] =
     usePersistedColumnVisibility(COLUMN_VISIBILITY_KEY)
 
+  const orderedPositions = useMemo(
+    () => newestFirst(positions, (row) => row.lastReceptionAt),
+    [positions]
+  )
+
   const columns = useMemo<ColumnDef<StockPosition>[]>(
     () => [
       {
         id: 'product',
         accessorFn: (row) =>
-          row.product ? `${row.product.code} — ${row.product.name}` : '',
+          row.product ? `${row.product.code} - ${row.product.name}` : '',
         meta: { label: t('nav.products') },
         header: ({ column }) => (
           <SortableHeader column={column} title={t('nav.products')} />
         ),
         cell: ({ row }) =>
           row.original.product
-            ? `${row.original.product.code} — ${row.original.product.name}`
-            : '—',
+            ? `${row.original.product.code} - ${row.original.product.name}`
+            : '-',
         filterFn: columnTextFilterFn,
       },
       {
         id: 'lot',
         accessorFn: (row) =>
-          row.lot ? `${row.lot.code} — ${row.lot.name}` : '',
+          row.lot ? `${row.lot.code} - ${row.lot.name}` : '',
         meta: { label: t('stock.lot') },
         header: ({ column }) => (
           <SortableHeader column={column} title={t('stock.lot')} />
         ),
         cell: ({ row }) =>
-          row.original.lot ? `${row.original.lot.code} — ${row.original.lot.name}` : '—',
+          row.original.lot ? `${row.original.lot.code} - ${row.original.lot.name}` : '-',
         filterFn: columnTextFilterFn,
       },
       {
@@ -127,7 +133,7 @@ export function StockPositionsTable({
         cell: ({ row }) =>
           row.original.nearestExpiry
             ? new Date(row.original.nearestExpiry).toLocaleDateString('fr-DZ')
-            : '—',
+            : '-',
         filterFn: columnTextFilterFn,
       },
       {
@@ -147,7 +153,7 @@ export function StockPositionsTable({
         header: ({ column }) => (
           <SortableHeader column={column} title={t('stock.lastSupplier')} />
         ),
-        cell: ({ row }) => row.original.supplier?.fullName ?? '—',
+        cell: ({ row }) => row.original.supplier?.fullName ?? '-',
         filterFn: columnTextFilterFn,
       },
     ],
@@ -168,10 +174,10 @@ export function StockPositionsTable({
   )
 
   const table = useReactTable({
-    data: positions,
+    data: orderedPositions,
     columns,
-    getRowId: (row, index) =>
-      `${row.product?._id ?? 'p'}-${row.lot?._id ?? 'l'}-${row.supplier?._id ?? 's'}-${index}`,
+    getRowId: (row) =>
+      `${row.product?._id ?? 'p'}-${row.lot?._id ?? 'l'}-${row.supplier?._id ?? 's'}-${row.lastBuyPrice}-${row.lastSellPrice}`,
     state: {
       sorting,
       globalFilter,

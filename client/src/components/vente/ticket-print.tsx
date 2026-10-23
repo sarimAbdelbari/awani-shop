@@ -6,13 +6,13 @@ import type { Order, OrderItem } from '@/types'
 
 function productLabel(item: OrderItem) {
   if (typeof item.product === 'string') return item.product
-  return `${item.product.code} — ${item.product.name}`
+  return `${item.product.code} - ${item.product.name}`
 }
 
 function pileLabel(item: OrderItem) {
   const lot = typeof item.lot === 'string' ? item.lot : item.lot?.code
   const supplier = typeof item.supplier === 'string' ? item.supplier : item.supplier?.fullName
-  return [lot, supplier].filter(Boolean).join(' — ')
+  return [lot, supplier].filter(Boolean).join(' - ')
 }
 
 type TicketPrintProps = {
@@ -47,6 +47,12 @@ export function TicketPrint({ order, shopName }: TicketPrintProps) {
       <hr />
       <p className="ticket-total">
         {t('orders.grandTotal')} {formatMoney(order.total)}
+      </p>
+      <p>
+        {t('orders.cashReceived')} {formatMoney(order.cashReceived ?? 0)}
+      </p>
+      <p>
+        {t('orders.changeDue')} {formatMoney(order.change ?? 0)}
       </p>
     </article>,
     document.body

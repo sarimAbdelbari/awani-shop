@@ -13,6 +13,8 @@ import {
   YAxis,
 } from 'recharts'
 
+import { BenefitsCard, CapitalCard, CompactStat, FraisPie } from '@/components/stats/money-figures'
+
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -28,7 +30,7 @@ import { getApiErrorMessage } from '@/api/axios'
 import { useAuth } from '@/context/AuthContext'
 import { useI18n } from '@/i18n'
 import { formatMoney } from '@/lib/vente-search'
-import type { DashboardStats, ExpenseCategory } from '@/types'
+import type { DashboardStats } from '@/types'
 import { error_toast } from '@/utils/toastNotification'
 
 const quickLinks = [
@@ -69,16 +71,6 @@ export function DashboardPage() {
       .finally(() => setLoading(false))
   }, [isAdmin, from, to, t])
 
-  const cards = stats
-    ? [
-        { label: t('dashboard.caToday'), value: formatMoney(stats.caToday) },
-        { label: t('dashboard.ticketsToday'), value: String(stats.ticketsToday) },
-        { label: t('dashboard.caPeriod'), value: formatMoney(stats.caPeriod) },
-        { label: t('dashboard.margePeriod'), value: formatMoney(stats.margePeriod) },
-        { label: t('dashboard.resultatPeriod'), value: formatMoney(stats.resultatPeriod) },
-      ]
-    : []
-
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 md:p-6">
       <h1 className="sr-only">{t('dashboard.title')}</h1>
@@ -112,28 +104,41 @@ export function DashboardPage() {
       {isAdmin && (
         <>
           {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              {[...Array(5)].map((_, index) => (
-                <Card key={index}>
-                  <CardHeader className="pb-2">
-                    <div className="bg-muted h-3 w-24 animate-pulse rounded" />
-                    <div className="bg-muted mt-2 h-8 w-20 animate-pulse rounded" />
-                  </CardHeader>
-                </Card>
-              ))}
+            <div className="flex flex-col gap-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                {[...Array(3)].map((_, index) => (
+                  <Card key={index}>
+                    <CardHeader className="pb-2">
+                      <div className="bg-muted h-3 w-24 animate-pulse rounded" />
+                      <div className="bg-muted mt-2 h-8 w-20 animate-pulse rounded" />
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                {[...Array(2)].map((_, index) => (
+                  <Card key={index}>
+                    <CardHeader className="pb-2">
+                      <div className="bg-muted h-3 w-24 animate-pulse rounded" />
+                      <div className="bg-muted mt-2 h-8 w-32 animate-pulse rounded" />
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              {cards.map((item) => (
-                <Card key={item.label}>
-                  <CardHeader className="pb-2">
-                    <CardDescription>{item.label}</CardDescription>
-                    <CardTitle className="text-2xl font-semibold tabular-nums">{item.value}</CardTitle>
-                  </CardHeader>
-                </Card>
-              ))}
+          ) : stats ? (
+            <div className="flex flex-col gap-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <CompactStat label={t('dashboard.caToday')} value={formatMoney(stats.caToday)} />
+                <CompactStat label={t('dashboard.ticketsToday')} value={String(stats.ticketsToday)} />
+                <CompactStat label={t('dashboard.caPeriod')} value={formatMoney(stats.caPeriod)} />
+              </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <CapitalCard stats={stats} />
+                <BenefitsCard stats={stats} />
+              </div>
             </div>
-          )}
+          ) : null}
 
           {stats ? (
             <div className="grid gap-4 lg:grid-cols-3">
@@ -199,32 +204,9 @@ export function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('dashboard.fraisChart')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {stats.fraisByCategory.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">{t('dashboard.noBills')}</p>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart
-                        data={stats.fraisByCategory.map((row) => ({
-                          ...row,
-                          label: t(`expenses.categories.${row.category as ExpenseCategory}`),
-                        }))}
-                      >
-                        <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} />
-                        <YAxis tick={chartTick} width={56} />
-                        <Tooltip formatter={(value) => formatMoney(Number(value ?? 0))} />
-                        <Bar dataKey="amount" fill="var(--chart-3)" radius={4} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card>
+              <FraisPie rows={stats.fraisByCategory} className="lg:col-span-3" />
 
-              <Card className="lg:col-span-2">
+              <Card className="lg:col-span-3">
                 <CardHeader className="flex flex-row items-start justify-between gap-3">
                   <div>
                     <CardTitle>{t('dashboard.lowPiles')}</CardTitle>
@@ -244,7 +226,7 @@ export function DashboardPage() {
                         className="flex items-center justify-between gap-3 text-sm"
                       >
                         <span className="min-w-0 truncate">
-                          {pile.productCode} — {pile.productName}
+                          {pile.productCode} - {pile.productName}
                           <span className="text-muted-foreground">
                             {' '}
                             · {pile.lotCode} · {pile.supplierName}

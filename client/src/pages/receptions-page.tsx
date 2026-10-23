@@ -4,7 +4,9 @@ import { lotApi, productApi, receptionApi, supplierApi, type ReceptionPayload } 
 import { getApiErrorMessage } from '@/api/axios'
 import { ReceptionForm } from '@/components/receptions/reception-form'
 import {
+  defaultLotIdFromLots,
   emptyLineDraft,
+  latestSupplierId,
   lineToDraft,
   type ReceptionLineDraft,
 } from '@/components/receptions/reception-helpers'
@@ -55,11 +57,21 @@ export function ReceptionsPage() {
     supplierApi.list().then(setSuppliers).catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const defaultLotId = defaultLotIdFromLots(lots)
+    if (!defaultLotId) return
+    setLines((prev) =>
+      prev.some((line) => !line.lot)
+        ? prev.map((line) => (line.lot ? line : { ...line, lot: defaultLotId }))
+        : prev
+    )
+  }, [lots])
+
   const openCreate = () => {
     setEditing(null)
-    setSupplierId('')
+    setSupplierId(latestSupplierId(receptions))
     setNote('')
-    setLines([emptyLineDraft()])
+    setLines([emptyLineDraft(defaultLotIdFromLots(lots))])
     setMode('create')
   }
 
@@ -75,6 +87,16 @@ export function ReceptionsPage() {
     setMode('list')
     setEditing(null)
   }
+
+  useEffect(() => {
+    const onBreadcrumb = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== '/dashboard/receptions') return
+      setMode('list')
+      setEditing(null)
+    }
+    window.addEventListener('awani:breadcrumb', onBreadcrumb)
+    return () => window.removeEventListener('awani:breadcrumb', onBreadcrumb)
+  }, [])
 
   const buildPayload = (): ReceptionPayload | null => {
     if (!supplierId) {
@@ -117,6 +139,7 @@ export function ReceptionsPage() {
         status: line.status,
         buyPrice: Number(line.buyPrice),
         sellPrice: Number(line.sellPrice),
+        allowPriceChange: line.allowPriceChange,
         expiryDate: line.expiryDate || null,
         observation: line.observation.trim(),
       })),
@@ -167,6 +190,7 @@ export function ReceptionsPage() {
             suppliers={suppliers}
             products={products}
             lots={lots}
+            receptions={receptions}
             disabled={saving}
             receptionNumber={editing?.number}
           />
@@ -200,6 +224,14 @@ export function ReceptionsPage() {
           if (!open) setViewing(null)
         }}
         reception={viewing}
+        onEdit={
+          isAdmin
+            ? (reception) => {
+                setViewing(null)
+                openEdit(reception)
+              }
+            : undefined
+        }
       />
       <DeleteReceptionDialog
         open={deleting !== null}

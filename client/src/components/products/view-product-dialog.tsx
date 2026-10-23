@@ -34,7 +34,7 @@ export function ViewProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('common.view')}</DialogTitle>
         </DialogHeader>
@@ -45,15 +45,15 @@ export function ViewProductDialog({
             <Row
               label={t('products.qrCode')}
               value={
-                <span className="font-mono text-xs">{product.qrCode || '—'}</span>
+                <span className="font-mono text-xs">{product.qrCode || '-'}</span>
               }
             />
             <Row
               label={t('products.category')}
               value={
                 product.category
-                  ? `${product.category.code} — ${product.category.name}`
-                  : '—'
+                  ? `${product.category.code} - ${product.category.name}`
+                  : '-'
               }
             />
             <Row

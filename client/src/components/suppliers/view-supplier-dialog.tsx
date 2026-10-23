@@ -29,19 +29,19 @@ export function ViewSupplierDialog({ open, onOpenChange, supplier }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('common.view')}</DialogTitle>
         </DialogHeader>
         {supplier && (
           <dl>
             <Row label={t('suppliers.fullName')} value={supplier.fullName} />
-            <Row label={t('common.phone')} value={supplier.phone || '—'} />
-            <Row label={t('suppliers.location')} value={supplier.location || '—'} />
-            <Row label={t('suppliers.nif')} value={<span className="font-mono text-xs">{supplier.nif || '—'}</span>} />
-            <Row label={t('suppliers.nis')} value={<span className="font-mono text-xs">{supplier.nis || '—'}</span>} />
-            <Row label={t('suppliers.rc')} value={<span className="font-mono text-xs">{supplier.rc || '—'}</span>} />
-            <Row label={t('common.email')} value={supplier.email || '—'} />
+            <Row label={t('common.phone')} value={supplier.phone || '-'} />
+            <Row label={t('suppliers.location')} value={supplier.location || '-'} />
+            <Row label={t('suppliers.nif')} value={<span className="font-mono text-xs">{supplier.nif || '-'}</span>} />
+            <Row label={t('suppliers.nis')} value={<span className="font-mono text-xs">{supplier.nis || '-'}</span>} />
+            <Row label={t('suppliers.rc')} value={<span className="font-mono text-xs">{supplier.rc || '-'}</span>} />
+            <Row label={t('common.email')} value={supplier.email || '-'} />
             <Row
               label={t('common.date')}
               value={new Date(supplier.createdAt).toLocaleString('fr-DZ')}

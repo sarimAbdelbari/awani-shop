@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 
-import awaniShopLogo from '@/assets/main/AwaniShop.jpg'
+import awaniLogo from '@/assets/main/AwaniLogo.png'
 
 import { NavMain } from '@/components/nav-main'
 import { NavSecondary } from '@/components/nav-secondary'
@@ -14,7 +14,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ChartHistogramIcon,
@@ -35,6 +42,41 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { useI18n } from '@/i18n'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
+
+function LocaleToggle({
+  code,
+  label,
+  active,
+  onClick,
+}: {
+  code: 'fr' | 'en'
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
+  const { state, isMobile } = useSidebar()
+  const button = (
+    <Button
+      variant={active ? 'default' : 'ghost'}
+      size="sm"
+      className="h-7 flex-1 text-xs group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:shrink-0 group-data-[collapsible=icon]:p-0"
+      onClick={onClick}
+    >
+      {code.toUpperCase()}
+    </Button>
+  )
+
+  if (state === 'collapsed' && !isMobile) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="right" align="center">{label}</TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return button
+}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t, locale, setLocale } = useI18n()
@@ -147,22 +189,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   ]
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
+              size="lg"
+              tooltip="Awani Shop"
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link to="/dashboard" className="gap-2">
                 <img
-                  src={awaniShopLogo}
+                  src={awaniLogo}
                   alt=""
                   role="presentation"
                   width={40}
                   height={40}
-                  className="size-10 shrink-0 rounded-md object-cover"
+                  className="size-9 scale-125 shrink-0 object-contain brightness-0 saturate-100 dark:invert group-data-[collapsible=icon]:size-8"
                   decoding="async"
                 />
                 <span className="text-base font-semibold">Awani Shop</span>
@@ -181,27 +225,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex justify-center gap-1 px-2 pb-1">
-          <Button
-            variant={locale === 'fr' ? 'default' : 'ghost'}
-            size="sm"
-            className="h-7 flex-1 text-xs"
+        <div className="flex justify-center gap-1 px-2 pb-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-2 group-data-[collapsible=icon]:px-1">
+          <LocaleToggle
+            code="fr"
+            label={t('common.french')}
+            active={locale === 'fr'}
             onClick={() => setLocale('fr')}
-          >
-            FR
-          </Button>
-          <Button
-            variant={locale === 'en' ? 'default' : 'ghost'}
-            size="sm"
-            className="h-7 flex-1 text-xs"
+          />
+          <LocaleToggle
+            code="en"
+            label={t('common.english')}
+            active={locale === 'en'}
             onClick={() => setLocale('en')}
-          >
-            EN
-          </Button>
-          <ThemeToggle className="size-7 shrink-0" />
+          />
+          <ThemeToggle className="size-7 shrink-0 group-data-[collapsible=icon]:size-8" />
         </div>
         <NavUser />
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }

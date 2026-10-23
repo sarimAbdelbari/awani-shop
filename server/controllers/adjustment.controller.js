@@ -25,18 +25,24 @@ const createAdjustment = async (req, res) => {
     const productId = req.body.productId;
     const lotId = req.body.lotId;
     const supplierId = req.body.supplierId;
+    const buyPrice = Number(req.body.buyPrice);
+    const sellPrice = Number(req.body.sellPrice);
 
     if (!['casse', 'perte', 'inventaire'].includes(reason)) {
       return res.status(400).json({ message: 'Reason must be casse, perte, or inventaire' });
     }
-    if (!observation) return res.status(400).json({ message: 'Observation is required' });
     if (!productId || !lotId || !supplierId) {
       return res.status(400).json({ message: 'Product, lot, and supplier are required' });
+    }
+    if (!Number.isFinite(buyPrice) || buyPrice < 0 || !Number.isFinite(sellPrice) || sellPrice < 0) {
+      return res.status(400).json({ message: 'Buy and sell price are required' });
     }
 
     const positions = await listPositions();
     const pile = positions.find(
-      (row) => pileKey(row.product._id, row.lot._id, row.supplier._id) === pileKey(productId, lotId, supplierId)
+      (row) =>
+        pileKey(row.product._id, row.lot._id, row.supplier._id, row.lastBuyPrice, row.lastSellPrice) ===
+        pileKey(productId, lotId, supplierId, buyPrice, sellPrice)
     );
     if (!pile) return res.status(400).json({ message: 'Pile not found' });
 
@@ -69,6 +75,8 @@ const createAdjustment = async (req, res) => {
       product: productId,
       lot: lotId,
       supplier: supplierId,
+      buyPrice: pile.lastBuyPrice,
+      sellPrice: pile.lastSellPrice,
       reason,
       quantity,
       direction,

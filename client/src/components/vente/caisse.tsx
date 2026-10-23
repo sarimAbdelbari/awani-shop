@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { CashStep } from '@/components/vente/cash-step'
 import { SlotBar } from '@/components/vente/slot-bar'
 import { TicketForm, type CaisseActions } from '@/components/vente/ticket-form'
 import { TicketPrint } from '@/components/vente/ticket-print'
@@ -10,18 +11,21 @@ import {
   emptyTicket,
   emptyTickets,
   loadDrafts,
+  linePileKey,
   pileKey,
   reservedQty,
   saveDrafts,
+  ticketTotal,
   type DraftTicket,
 } from '@/lib/vente-drafts'
+import { parseMoney } from '@/lib/vente-search'
 import type { Client, Order, Product, StockPosition } from '@/types'
 import { error_toast, sucess_toast } from '@/utils/toastNotification'
 
 export function Caisse() {
   const { t } = useI18n()
   const actionsRef = useRef<CaisseActions>({
-    focusClient: () => undefined,
+    focusProduct: () => undefined,
     newClient: () => undefined,
     escape: () => undefined,
     validate: () => undefined,
@@ -41,6 +45,10 @@ export function Caisse() {
   const [printOrder, setPrintOrder] = useState<Order | null>(null)
   const [shiftOpen, setShiftOpen] = useState(false)
   const shiftOpenRef = useRef(false)
+  const cashRef = useRef<{ index: number; ticket: DraftTicket; total: number } | null>(null)
+  const [cashOpen, setCashOpen] = useState(false)
+  const [cashTotal, setCashTotal] = useState(0)
+  const [receivedText, setReceivedText] = useState('')
 
   useEffect(() => {
     const stored = loadDrafts()
@@ -88,19 +96,24 @@ export function Caisse() {
 
   useEffect(() => {
     if (!ready || loading) return
-    const frame = requestAnimationFrame(() => actionsRef.current.focusClient())
+    const frame = requestAnimationFrame(() => actionsRef.current.focusProduct())
     return () => cancelAnimationFrame(frame)
   }, [active, ready, loading])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (cashRef.current && ['F1', 'F2', 'F3', 'F4', 'F8', 'F9'].includes(event.key)) {
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
       const slotKey = ['F1', 'F2', 'F3', 'F4'].includes(event.key)
       if (slotKey) {
         event.preventDefault()
         event.stopPropagation()
         if (event.type !== 'keydown' || event.repeat) return
         const index = Number(event.key.slice(1)) - 1
-        if (index === activeRef.current) actionsRef.current.focusClient()
+        if (index === activeRef.current) actionsRef.current.focusProduct()
         else {
           activeRef.current = index
           setActive(index)
@@ -122,6 +135,12 @@ export function Caisse() {
       if (event.key === 'Escape' && event.type === 'keydown') {
         event.preventDefault()
         event.stopPropagation()
+        if (cashRef.current) {
+          if (savingRef.current) return
+          cashRef.current = null
+          setCashOpen(false)
+          return
+        }
         actionsRef.current.escape()
         return
       }
@@ -160,7 +179,14 @@ export function Caisse() {
     )
   }
 
-  const validate = async () => {
+  const closeCash = () => {
+    if (savingRef.current) return
+    cashRef.current = null
+    setCashOpen(false)
+  }
+
+  const openCash = () => {
+    if (cashRef.current || savingRef.current) return
     const current = tickets[activeRef.current] ?? emptyTicket()
     if (current.lines.length === 0) {
       error_toast(t('orders.emptyInvoice'))
@@ -171,13 +197,14 @@ export function Caisse() {
       return
     }
     for (const line of current.lines) {
+      const key = linePileKey(line)
       const pile = positions.find(
         (row) =>
-          row.product?._id === line.productId &&
-          row.lot?._id === line.lotId &&
-          row.supplier?._id === line.supplierId
+          row.product &&
+          row.lot &&
+          row.supplier &&
+          pileKey(row.product._id, row.lot._id, row.supplier._id, row.lastBuyPrice, row.lastSellPrice) === key
       )
-      const key = pileKey(line.productId, line.lotId, line.supplierId)
       const others = reservedQty(tickets, key, line.key)
       const available = (pile?.quantity ?? 0) - others
       if (line.qty > available) {
@@ -185,29 +212,45 @@ export function Caisse() {
         return
       }
     }
-    if (savingRef.current) return
+    const total = ticketTotal(current)
+    cashRef.current = { index: activeRef.current, ticket: current, total }
+    setCashTotal(total)
+    setReceivedText('')
+    setCashOpen(true)
+  }
+
+  const finishCash = async (print: boolean) => {
+    const pending = cashRef.current
+    if (!pending || savingRef.current) return
+    const received = parseMoney(receivedText)
+    if (received == null || received < pending.total) return
     savingRef.current = true
     setSaving(true)
     try {
       const order = await orderApi.create({
-        clientId: current.client?._id ?? null,
-        items: current.lines.map((line) => ({
+        clientId: pending.ticket.client?._id ?? null,
+        cashReceived: received,
+        items: pending.ticket.lines.map((line) => ({
           productId: line.productId,
           lotId: line.lotId,
           supplierId: line.supplierId,
+          buyPrice: line.buyPrice,
+          catalogPrice: line.catalogPrice,
           qty: line.qty,
           unitPrice: line.unitPrice,
         })),
       })
-      setTickets((rows) => rows.map((row, index) => (index === activeRef.current ? emptyTicket() : row)))
-      setPrintOrder(order)
+      setTickets((rows) => rows.map((row, index) => (index === pending.index ? emptyTicket() : row)))
+      cashRef.current = null
+      setCashOpen(false)
       sucess_toast(`${t('orders.orderSuccess')} ${order.number}`)
+      if (print) setPrintOrder(order)
       try {
         setPositions(await stockApi.positions())
       } catch (err) {
         error_toast(getApiErrorMessage(err))
       }
-      requestAnimationFrame(() => actionsRef.current.focusClient())
+      requestAnimationFrame(() => actionsRef.current.focusProduct())
     } catch (err) {
       error_toast(getApiErrorMessage(err, t('orders.insufficientStock')))
     } finally {
@@ -228,6 +271,7 @@ export function Caisse() {
         tickets={tickets}
         active={active}
         onSelect={(index) => {
+          if (cashRef.current) return
           activeRef.current = index
           setActive(index)
         }}
@@ -248,12 +292,23 @@ export function Caisse() {
           onClient={(client) => updateTicket({ client })}
           onLines={(lines) => updateTicket({ lines })}
           onClientCreated={(client) => setClients((current) => [client, ...current])}
-          onValidate={() => void validate()}
+          onValidate={openCash}
           register={(actions) => {
             actionsRef.current = actions
           }}
         />
       )}
+      <CashStep
+        open={cashOpen}
+        total={cashTotal}
+        receivedText={receivedText}
+        saving={saving}
+        onReceivedText={setReceivedText}
+        onOpenChange={(open) => {
+          if (!open) closeCash()
+        }}
+        onFinish={(print) => void finishCash(print)}
+      />
       <TicketPrint order={printOrder} shopName={shopName} />
     </div>
   )

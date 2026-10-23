@@ -162,6 +162,10 @@ code {
 }
 
 @media print {
+  body > *:not(.vente-ticket) {
+    display: none !important;
+  }
+
   #root {
     display: none !important;
   }

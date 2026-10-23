@@ -30,6 +30,7 @@ import {
 import { usePersistedColumnVisibility } from '@/hooks/use-persisted-column-visibility'
 import { usePersistedPagination } from '@/hooks/use-persisted-pagination'
 import { useI18n } from '@/i18n'
+import { newestFirst } from '@/lib/table/newest-first'
 import { columnTextFilterFn, makeGlobalFilterFn } from '@/lib/table/search'
 import type { Category } from '@/types'
 
@@ -63,6 +64,11 @@ export function CategoriesTable({
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
   const [columnVisibility, setColumnVisibility] =
     usePersistedColumnVisibility(COLUMN_VISIBILITY_KEY)
+
+  const orderedCategories = useMemo(
+    () => newestFirst(categories, (row) => row.createdAt),
+    [categories]
+  )
 
   const columns = useMemo<ColumnDef<Category>[]>(
     () => [
@@ -152,7 +158,7 @@ export function CategoriesTable({
   )
 
   const table = useReactTable({
-    data: categories,
+    data: orderedCategories,
     columns,
     getRowId: (row) => row._id,
     state: {

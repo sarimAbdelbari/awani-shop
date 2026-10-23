@@ -30,7 +30,7 @@ export function ViewLotDialog({ open, onOpenChange, lot }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('common.view')}</DialogTitle>
         </DialogHeader>

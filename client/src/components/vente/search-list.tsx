@@ -1,9 +1,19 @@
 import { useEffect, useRef } from 'react'
 
+import { cn } from '@/lib/utils'
+
+type SearchCell = {
+  text: string
+  muted?: boolean
+  align?: 'start' | 'end'
+  hint?: string
+}
+
 type SearchOption = {
   id: string
   primary: string
   secondary?: string
+  cells?: SearchCell[]
 }
 
 type SearchListProps = {
@@ -45,10 +55,32 @@ export function SearchList({ listId, options, highlight, onPick }: SearchListPro
             onPick(index)
           }}
         >
-          <span className="block text-sm">{option.primary}</span>
-          {option.secondary ? (
-            <span className="text-muted-foreground block text-xs">{option.secondary}</span>
-          ) : null}
+          {option.cells ? (
+            <span className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_3.25rem_6.5rem] items-baseline gap-2 text-sm">
+              {option.cells.map((cell, cellIndex) => (
+                <span
+                  key={cellIndex}
+                  className={cn(
+                    'min-w-0 truncate',
+                    cell.muted && 'text-muted-foreground/45',
+                    cell.align === 'end' && 'text-right tabular-nums'
+                  )}
+                >
+                  {cell.text}
+                  {cell.hint ? (
+                    <span className="text-muted-foreground block truncate text-xs font-normal">{cell.hint}</span>
+                  ) : null}
+                </span>
+              ))}
+            </span>
+          ) : (
+            <>
+              <span className="block text-sm">{option.primary}</span>
+              {option.secondary ? (
+                <span className="text-muted-foreground block text-xs">{option.secondary}</span>
+              ) : null}
+            </>
+          )}
         </li>
       ))}
     </ul>

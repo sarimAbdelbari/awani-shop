@@ -252,10 +252,10 @@ export function ExpensesPage() {
               rows.map((row) => (
                 <tr key={row._id} className="border-t">
                   <td className="px-3 py-2">{dayOf(row.date)}</td>
-                  <td className="px-3 py-2">{row.name || '—'}</td>
+                  <td className="px-3 py-2">{row.name || '-'}</td>
                   <td className="px-3 py-2">{t(`expenses.categories.${row.category}`)}</td>
                   <td className="px-3 py-2 tabular-nums">{formatMoney(row.amount)}</td>
-                  <td className="px-3 py-2">{row.note || '—'}</td>
+                  <td className="px-3 py-2">{row.note || '-'}</td>
                   <td className="px-3 py-2">
                     <div className="flex gap-2">
                       <Button
@@ -325,7 +325,7 @@ export function ExpensesPage() {
       </Dialog>
 
       <Dialog open={removing != null} onOpenChange={(open) => !open && setRemoving(null)}>
-        <DialogContent>
+        <DialogContent className="h-auto max-h-none min-h-0 overflow-visible sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t('common.confirmDelete')}</DialogTitle>
           </DialogHeader>

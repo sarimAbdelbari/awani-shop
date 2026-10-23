@@ -41,7 +41,8 @@ export function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              tooltip={user?.name ?? t('nav.account')}
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:[&>div]:hidden group-data-[collapsible=icon]:[&>svg:last-child]:hidden"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarFallback className="rounded-lg bg-primary/10 text-primary text-xs font-semibold">
@@ -49,7 +50,7 @@ export function NavUser() {
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user?.name ?? '—'}</span>
+                <span className="truncate font-medium">{user?.name ?? '-'}</span>
                 <span className="text-muted-foreground truncate text-xs capitalize">
                   {user?.role === 'admin' ? t('settings.roles.admin') : t('settings.roles.cashier')}
                 </span>

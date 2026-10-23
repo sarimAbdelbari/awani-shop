@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useI18n } from '@/i18n'
 import { pileKey } from '@/lib/vente-drafts'
-import { matchWildcard, parseQty, searchRank } from '@/lib/vente-search'
+import { formatMoney, matchWildcard, parseQty, searchRank } from '@/lib/vente-search'
 import type { AdjustmentReason, Product, StockAdjustment, StockPosition } from '@/types'
 import { error_toast, sucess_toast } from '@/utils/toastNotification'
 
@@ -73,14 +73,12 @@ export function AdjustmentsPage() {
       error_toast(t('adjustments.needPile'))
       return
     }
-    if (!observation.trim()) {
-      error_toast(t('adjustments.needObservation'))
-      return
-    }
     const payload = {
       productId: pile.product._id,
       lotId: pile.lot._id,
       supplierId: pile.supplier._id,
+      buyPrice: pile.lastBuyPrice,
+      sellPrice: pile.lastSellPrice,
       reason,
       observation: observation.trim(),
     }
@@ -156,7 +154,7 @@ export function AdjustmentsPage() {
               if (event.key === 'Enter' && matches[highlight]) {
                 event.preventDefault()
                 setProduct(matches[highlight])
-                setQuery(`${matches[highlight].code} — ${matches[highlight].name}`)
+                setQuery(`${matches[highlight].code} - ${matches[highlight].name}`)
               }
             }}
           />
@@ -166,23 +164,35 @@ export function AdjustmentsPage() {
               highlight={highlight}
               options={matches.map((item) => ({
                 id: item._id,
-                primary: `${item.code} — ${item.name}`,
+                primary: `${item.code} - ${item.name}`,
               }))}
               onPick={(index) => {
                 const picked = matches[index]
                 if (!picked) return
                 setProduct(picked)
-                setQuery(`${picked.code} — ${picked.name}`)
+                setQuery(`${picked.code} - ${picked.name}`)
               }}
             />
           ) : null}
           {piles.length > 0 ? (
             <div className="flex flex-col gap-2">
               {piles.map((row) => {
-                const key = pileKey(row.product?._id ?? '', row.lot?._id ?? '', row.supplier?._id ?? '')
+                const key = pileKey(
+                  row.product?._id ?? '',
+                  row.lot?._id ?? '',
+                  row.supplier?._id ?? '',
+                  row.lastBuyPrice,
+                  row.lastSellPrice
+                )
                 const selected =
                   pile != null &&
-                  pileKey(pile.product?._id ?? '', pile.lot?._id ?? '', pile.supplier?._id ?? '') === key
+                  pileKey(
+                    pile.product?._id ?? '',
+                    pile.lot?._id ?? '',
+                    pile.supplier?._id ?? '',
+                    pile.lastBuyPrice,
+                    pile.lastSellPrice
+                  ) === key
                 const blocked = reason !== 'inventaire' && row.quantity <= 0
                 return (
                   <button
@@ -196,7 +206,7 @@ export function AdjustmentsPage() {
                         : 'hover:bg-muted rounded-lg border px-3 py-2 text-left text-sm disabled:opacity-40'
                     }
                   >
-                    {row.lot?.code} — {row.supplier?.fullName} — {t('orders.available')} {row.quantity}
+                    {row.lot?.code} - {row.supplier?.fullName} - {t('orders.available')} {row.quantity} - {formatMoney(row.lastSellPrice)}
                   </button>
                 )
               })}

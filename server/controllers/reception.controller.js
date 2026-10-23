@@ -108,6 +108,7 @@ async function parseLines(rawLines) {
       sellPrice,
       expiryDate: parseExpiry(raw.expiryDate),
       observation: status === 'R' ? observation : observation,
+      allowPriceChange: raw.allowPriceChange !== false,
     });
   }
   return lines;

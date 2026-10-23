@@ -136,6 +136,48 @@ export function SalesOrdersTable({ orders, loading = false, onView }: SalesOrder
         },
       },
       {
+        id: 'cashReceived',
+        accessorFn: (row) => row.cashReceived ?? null,
+        meta: { label: t('orders.cashReceived') },
+        header: ({ column }) => (
+          <SortableHeader column={column} title={t('orders.cashReceived')} />
+        ),
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {typeof row.original.cashReceived === 'number' ? formatMoney(row.original.cashReceived) : '-'}
+          </span>
+        ),
+        filterFn: (row, _columnId, filterValue) => {
+          const query = String(filterValue ?? '').trim().toLowerCase()
+          if (!query) return true
+          if (typeof row.original.cashReceived !== 'number') return '-'.includes(query)
+          const raw = String(row.original.cashReceived)
+          const pretty = formatMoney(row.original.cashReceived).toLowerCase()
+          return raw.includes(query) || pretty.includes(query)
+        },
+      },
+      {
+        id: 'change',
+        accessorFn: (row) => row.change ?? null,
+        meta: { label: t('orders.changeDue') },
+        header: ({ column }) => (
+          <SortableHeader column={column} title={t('orders.changeDue')} />
+        ),
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {typeof row.original.change === 'number' ? formatMoney(row.original.change) : '-'}
+          </span>
+        ),
+        filterFn: (row, _columnId, filterValue) => {
+          const query = String(filterValue ?? '').trim().toLowerCase()
+          if (!query) return true
+          if (typeof row.original.change !== 'number') return '-'.includes(query)
+          const raw = String(row.original.change)
+          const pretty = formatMoney(row.original.change).toLowerCase()
+          return raw.includes(query) || pretty.includes(query)
+        },
+      },
+      {
         id: 'actions',
         enableSorting: false,
         enableColumnFilter: false,
@@ -170,6 +212,10 @@ export function SalesOrdersTable({ orders, loading = false, onView }: SalesOrder
         totalQty(order),
         order.total,
         formatMoney(order.total),
+        order.cashReceived,
+        typeof order.cashReceived === 'number' ? formatMoney(order.cashReceived) : '',
+        order.change,
+        typeof order.change === 'number' ? formatMoney(order.change) : '',
       ]),
     [t]
   )

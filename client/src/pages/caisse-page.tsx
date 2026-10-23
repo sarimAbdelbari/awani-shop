@@ -113,7 +113,7 @@ export function CaissePage() {
             <p className="text-sm">
               {t('caisse.ecart')}:{' '}
               <span className="font-semibold tabular-nums">
-                {ecart == null ? '—' : formatMoney(ecart)}
+                {ecart == null ? '-' : formatMoney(ecart)}
               </span>
             </p>
             <div className="flex flex-col gap-1">
@@ -166,18 +166,18 @@ export function CaissePage() {
               history.map((shift) => (
                 <tr key={shift._id} className="border-t">
                   <td className="px-3 py-2">
-                    {shift.closedAt ? new Date(shift.closedAt).toLocaleString('fr-DZ') : '—'}
+                    {shift.closedAt ? new Date(shift.closedAt).toLocaleString('fr-DZ') : '-'}
                   </td>
-                  <td className="px-3 py-2">{shift.closedBy?.name || shift.openedBy?.name || '—'}</td>
+                  <td className="px-3 py-2">{shift.closedBy?.name || shift.openedBy?.name || '-'}</td>
                   <td className="px-3 py-2 tabular-nums">{formatMoney(shift.openingFloat)}</td>
                   <td className="px-3 py-2 tabular-nums">
-                    {shift.expectedCash == null ? '—' : formatMoney(shift.expectedCash)}
+                    {shift.expectedCash == null ? '-' : formatMoney(shift.expectedCash)}
                   </td>
                   <td className="px-3 py-2 tabular-nums">
-                    {shift.countedCash == null ? '—' : formatMoney(shift.countedCash)}
+                    {shift.countedCash == null ? '-' : formatMoney(shift.countedCash)}
                   </td>
                   <td className="px-3 py-2 tabular-nums">
-                    {shift.ecart == null ? '—' : formatMoney(shift.ecart)}
+                    {shift.ecart == null ? '-' : formatMoney(shift.ecart)}
                   </td>
                 </tr>
               ))

@@ -30,14 +30,14 @@ export function ViewClientDialog({ open, onOpenChange, client }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('common.view')}</DialogTitle>
         </DialogHeader>
         {client && (
           <dl>
             <Row label={t('clients.fullName')} value={client.fullName} />
-            <Row label={t('common.phone')} value={client.phone || '—'} />
+            <Row label={t('common.phone')} value={client.phone || '-'} />
             <Row
               label={t('clients.loyaltyPoints')}
               value={

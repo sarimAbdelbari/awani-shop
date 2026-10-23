@@ -31,6 +31,7 @@ import {
 import { usePersistedColumnVisibility } from '@/hooks/use-persisted-column-visibility'
 import { usePersistedPagination } from '@/hooks/use-persisted-pagination'
 import { useI18n } from '@/i18n'
+import { newestFirst } from '@/lib/table/newest-first'
 import { columnTextFilterFn, makeGlobalFilterFn } from '@/lib/table/search'
 import type { Lot } from '@/types'
 
@@ -64,6 +65,11 @@ export function LotsTable({
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
   const [columnVisibility, setColumnVisibility] =
     usePersistedColumnVisibility(COLUMN_VISIBILITY_KEY)
+
+  const orderedLots = useMemo(
+    () => newestFirst(lots, (row) => row.createdAt),
+    [lots]
+  )
 
   const columns = useMemo<ColumnDef<Lot>[]>(
     () => [
@@ -169,7 +175,7 @@ export function LotsTable({
   )
 
   const table = useReactTable({
-    data: lots,
+    data: orderedLots,
     columns,
     getRowId: (row) => row._id,
     state: {

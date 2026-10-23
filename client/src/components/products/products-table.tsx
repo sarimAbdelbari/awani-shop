@@ -47,6 +47,7 @@ import {
 import { usePersistedColumnVisibility } from '@/hooks/use-persisted-column-visibility'
 import { usePersistedPagination } from '@/hooks/use-persisted-pagination'
 import { useI18n } from '@/i18n'
+import { newestFirst } from '@/lib/table/newest-first'
 import { columnTextFilterFn, makeGlobalFilterFn } from '@/lib/table/search'
 import type { Category, Product } from '@/types'
 
@@ -88,7 +89,7 @@ export function ProductsTable({
     usePersistedColumnVisibility(COLUMN_VISIBILITY_KEY)
 
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    const filtered = products.filter((p) => {
       if (statusFilter === 'active' && !p.isActive) return false
       if (statusFilter === 'inactive' && p.isActive) return false
       if (categoryFilter !== 'all') {
@@ -97,6 +98,7 @@ export function ProductsTable({
       }
       return true
     })
+    return newestFirst(filtered, (row) => row.createdAt)
   }, [products, statusFilter, categoryFilter])
 
   const columns = useMemo<ColumnDef<Product>[]>(
@@ -132,7 +134,7 @@ export function ProductsTable({
         ),
         cell: ({ row }) => (
           <span className="text-muted-foreground font-mono text-xs">
-            {row.original.qrCode || '—'}
+            {row.original.qrCode || '-'}
           </span>
         ),
         filterFn: columnTextFilterFn,
@@ -140,7 +142,7 @@ export function ProductsTable({
       {
         id: 'category',
         accessorFn: (row) =>
-          row.category ? `${row.category.code} — ${row.category.name}` : '',
+          row.category ? `${row.category.code} - ${row.category.name}` : '',
         meta: { label: t('products.category') },
         header: ({ column }) => (
           <SortableHeader column={column} title={t('products.category')} />
@@ -148,8 +150,8 @@ export function ProductsTable({
         cell: ({ row }) => (
           <span className="text-muted-foreground text-sm">
             {row.original.category
-              ? `${row.original.category.code} — ${row.original.category.name}`
-              : '—'}
+              ? `${row.original.category.code} - ${row.original.category.name}`
+              : '-'}
           </span>
         ),
         filterFn: columnTextFilterFn,
@@ -327,7 +329,7 @@ export function ProductsTable({
               <SelectItem value="all">{t('table.allCategories')}</SelectItem>
               {categories.map((c) => (
                 <SelectItem key={c._id} value={c._id}>
-                  {c.code} — {c.name}
+                  {c.code} - {c.name}
                 </SelectItem>
               ))}
             </SelectContent>

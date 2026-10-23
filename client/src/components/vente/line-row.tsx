@@ -67,18 +67,22 @@ export function LineRow({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-2 border-b py-3 md:grid-cols-[minmax(0,1fr)_7rem_9rem_8rem] md:items-center">
+    <div className="grid grid-cols-1 gap-2 border-b py-3 md:grid-cols-[minmax(0,1fr)_7rem_11rem_8rem] md:items-start">
       <div className="min-w-0" onFocus={onFocus}>
         <p className="truncate text-sm font-medium">
-          {line.productCode} — {line.productName}
+          {line.productCode} - {line.productName}
         </p>
         <p className="text-muted-foreground truncate text-xs">
-          {line.lotCode} — {line.supplierName}
+          {line.lotCode} - {line.supplierName}
         </p>
         <p className="text-muted-foreground text-xs">
           {t('orders.catalogPrice')} {formatMoney(line.catalogPrice)}
-          {altHeld && buyPrice != null ? ` · ${t('orders.buyPrice')} ${formatMoney(buyPrice)}` : ''}
         </p>
+        {altHeld && buyPrice != null ? (
+          <p className="text-chart-1 text-xs font-medium tabular-nums">
+            {t('orders.buyPrice')} {formatMoney(buyPrice)}
+          </p>
+        ) : null}
       </div>
       <Input
         tabIndex={tabQty}
@@ -96,22 +100,32 @@ export function LineRow({
           }
         }}
       />
-      <Input
-        tabIndex={tabPrice}
-        inputMode="decimal"
-        autoComplete="off"
-        aria-label={t('orders.realPrice')}
-        value={priceText}
-        onFocus={onFocus}
-        onChange={(event) => setPriceText(event.target.value)}
-        onBlur={commitPrice}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.preventDefault()
-            commitPrice()
+      <div className="flex flex-col gap-1">
+        <Input
+          tabIndex={tabPrice}
+          inputMode="decimal"
+          autoComplete="off"
+          aria-label={t('orders.realPrice')}
+          value={priceText}
+          onFocus={onFocus}
+          onChange={(event) => setPriceText(event.target.value)}
+          onBlur={commitPrice}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              commitPrice()
+            }
+          }}
+          className={
+            line.allowPriceChange === false
+              ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30'
+              : undefined
           }
-        }}
-      />
+        />
+        {line.allowPriceChange === false ? (
+          <p className="text-destructive text-xs">{t('orders.fixedPrice')}</p>
+        ) : null}
+      </div>
       <div className="flex items-center justify-between gap-2 md:justify-end">
         <span className="text-sm font-medium tabular-nums">
           {formatMoney(line.unitPrice * line.qty)}

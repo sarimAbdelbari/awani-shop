@@ -65,6 +65,7 @@ export interface ReceptionLine {
   status: ReceptionLineStatus
   buyPrice: number
   sellPrice: number
+  allowPriceChange?: boolean
   expiryDate: string | null
   observation: string
 }
@@ -88,6 +89,7 @@ export interface StockPosition {
   nearestExpiry: string | null
   lastReceptionAt: string
   lastReceptionNumber: string
+  allowPriceChange?: boolean
   supplier: Pick<Supplier, '_id' | 'fullName'> | null
 }
 
@@ -109,6 +111,8 @@ export interface Order {
   items: OrderItem[]
   subtotal: number
   total: number
+  cashReceived?: number | null
+  change?: number | null
   createdBy: { name: string } | null
   note: string
   createdAt: string
@@ -141,6 +145,14 @@ export interface DashboardStats {
   caPeriod: number
   margePeriod: number
   resultatPeriod: number
+  capital: number
+  casse: number
+  perte: number
+  inventaireOut: number
+  inventaireIn: number
+  capitalAfter: number
+  beneficeAfterFrais: number
+  ticketsPeriod: number
   days: { date: string; ca: number; marge: number }[]
   topProducts: { name: string; qty: number; marge: number }[]
   fraisByCategory: { category: string; amount: number }[]

@@ -8,6 +8,7 @@ const receptionLineSchema = new mongoose.Schema(
     status: { type: String, enum: ['A', 'R'], required: true },
     buyPrice: { type: Number, required: true, min: 0 },
     sellPrice: { type: Number, required: true, min: 0 },
+    allowPriceChange: { type: Boolean, default: true },
     expiryDate: { type: Date, default: null },
     observation: { type: String, trim: true, default: '' },
   },

@@ -2,6 +2,8 @@ const Order = require('../models/Order');
 const Client = require('../models/Client');
 const Product = require('../models/Product');
 const Expense = require('../models/Expense');
+const Reception = require('../models/Reception');
+const StockAdjustment = require('../models/StockAdjustment');
 const StockMovement = require('../models/StockMovement');
 const Settings = require('../models/Settings');
 const Shift = require('../models/Shift');
@@ -113,23 +115,33 @@ const createOrder = async (req, res) => {
       if (!Number.isFinite(unitPrice) || unitPrice < 0) {
         return res.status(400).json({ message: `Line ${i + 1}: price must be 0 or more` });
       }
+      const buyPrice = Number(raw.buyPrice);
+      const catalogPrice = Number(raw.catalogPrice);
+      if (!Number.isFinite(buyPrice) || buyPrice < 0 || !Number.isFinite(catalogPrice) || catalogPrice < 0) {
+        return res.status(400).json({ message: `Line ${i + 1}: buy and catalog price are required` });
+      }
       parsed.push({
         productId: String(raw.productId),
         lotId: String(raw.lotId),
         supplierId: String(raw.supplierId),
         qty,
         unitPrice,
+        buyPrice,
+        catalogPrice,
       });
     }
 
     const positions = await listPositions();
     const byPile = new Map(
-      positions.map((row) => [pileKey(row.product._id, row.lot._id, row.supplier._id), row])
+      positions.map((row) => [
+        pileKey(row.product._id, row.lot._id, row.supplier._id, row.lastBuyPrice, row.lastSellPrice),
+        row,
+      ])
     );
 
     const requested = new Map();
     for (const item of parsed) {
-      const key = pileKey(item.productId, item.lotId, item.supplierId);
+      const key = pileKey(item.productId, item.lotId, item.supplierId, item.buyPrice, item.catalogPrice);
       requested.set(key, (requested.get(key) || 0) + item.qty);
     }
 
@@ -145,7 +157,9 @@ const createOrder = async (req, res) => {
     }
 
     const orderItems = parsed.map((item) => {
-      const pile = byPile.get(pileKey(item.productId, item.lotId, item.supplierId));
+      const pile = byPile.get(
+        pileKey(item.productId, item.lotId, item.supplierId, item.buyPrice, item.catalogPrice)
+      );
       const lineTotal = money(item.unitPrice * item.qty);
       return {
         product: item.productId,
@@ -160,6 +174,15 @@ const createOrder = async (req, res) => {
     });
 
     const total = money(orderItems.reduce((sum, item) => sum + item.lineTotal, 0));
+    const rawCash = Number(req.body.cashReceived);
+    if (!Number.isFinite(rawCash) || rawCash < 0) {
+      return res.status(400).json({ message: 'Cash received is required' });
+    }
+    const cashReceived = money(rawCash);
+    const change = money(cashReceived - total);
+    if (change < 0) {
+      return res.status(400).json({ message: 'Cash received is less than the total' });
+    }
     const number = await nextOrderNumber();
 
     const order = await Order.create({
@@ -168,6 +191,8 @@ const createOrder = async (req, res) => {
       items: orderItems,
       subtotal: total,
       total,
+      cashReceived,
+      change,
       createdBy: req.user.id,
       note: String(note || '').trim(),
     });
@@ -241,11 +266,29 @@ const getStats = async (req, res) => {
       999
     );
 
-    const [periodOrders, todayOrders, expenses, positions] = await Promise.all([
+    const [periodOrders, todayOrders, expenses, positions, capitalRows, adjustmentRows] = await Promise.all([
       Order.find({ createdAt: { $gte: rangeStart, $lte: rangeEnd } }).select('total items createdAt'),
       Order.find({ createdAt: { $gte: todayStart, $lte: todayEnd } }).select('total'),
       Expense.find({ date: { $gte: rangeStart, $lte: rangeEnd } }).select('category amount'),
       listPositions(),
+      Reception.aggregate([
+        { $unwind: '$lines' },
+        { $match: { 'lines.status': 'A' } },
+        {
+          $group: {
+            _id: null,
+            capital: { $sum: { $multiply: ['$lines.quantity', '$lines.buyPrice'] } },
+          },
+        },
+      ]),
+      StockAdjustment.aggregate([
+        {
+          $group: {
+            _id: { reason: '$reason', direction: '$direction' },
+            value: { $sum: { $multiply: ['$quantity', { $ifNull: ['$buyPrice', 0] }] } },
+          },
+        },
+      ]),
     ]);
 
     const daily = new Map();
@@ -287,6 +330,19 @@ const getStats = async (req, res) => {
       fraisByMap[expense.category] = (fraisByMap[expense.category] || 0) + expense.amount;
     });
 
+    const capital = capitalRows[0]?.capital || 0;
+    const loss = { casse: 0, perte: 0, inventaireOut: 0, inventaireIn: 0 };
+    adjustmentRows.forEach((row) => {
+      const reason = row._id?.reason;
+      const direction = row._id?.direction;
+      const value = row.value || 0;
+      if (reason === 'casse') loss.casse += value;
+      else if (reason === 'perte') loss.perte += value;
+      else if (reason === 'inventaire' && direction === 'out') loss.inventaireOut += value;
+      else if (reason === 'inventaire' && direction === 'in') loss.inventaireIn += value;
+    });
+    const capitalAfter = capital - loss.casse - loss.perte - loss.inventaireOut + loss.inventaireIn;
+
     const caToday = todayOrders.reduce((sum, order) => sum + order.total, 0);
     const topIds = [...productMap.entries()].sort((a, b) => b[1].marge - a[1].marge).slice(0, 5);
     const products = await Product.find({ _id: { $in: topIds.map(([id]) => id) } }).select('name code');
@@ -298,9 +354,17 @@ const getStats = async (req, res) => {
       caPeriod: money(caPeriod),
       margePeriod: money(margePeriod),
       resultatPeriod: money(caPeriod - fraisPeriod),
+      capital: money(capital),
+      casse: money(loss.casse),
+      perte: money(loss.perte),
+      inventaireOut: money(loss.inventaireOut),
+      inventaireIn: money(loss.inventaireIn),
+      capitalAfter: money(capitalAfter),
+      beneficeAfterFrais: money(margePeriod - fraisPeriod),
+      ticketsPeriod: periodOrders.length,
       days: [...daily.values()],
       topProducts: topIds.map(([id, row]) => ({
-        name: nameById[id] ? `${nameById[id].code} — ${nameById[id].name}` : id,
+        name: nameById[id] ? `${nameById[id].code} - ${nameById[id].name}` : id,
         qty: row.qty,
         marge: money(row.marge),
       })),

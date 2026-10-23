@@ -30,6 +30,7 @@ import {
 import { usePersistedColumnVisibility } from '@/hooks/use-persisted-column-visibility'
 import { usePersistedPagination } from '@/hooks/use-persisted-pagination'
 import { useI18n } from '@/i18n'
+import { newestFirst } from '@/lib/table/newest-first'
 import { columnTextFilterFn, makeGlobalFilterFn } from '@/lib/table/search'
 import type { Supplier } from '@/types'
 
@@ -64,6 +65,11 @@ export function SuppliersTable({
   const [columnVisibility, setColumnVisibility] =
     usePersistedColumnVisibility(COLUMN_VISIBILITY_KEY)
 
+  const orderedSuppliers = useMemo(
+    () => newestFirst(suppliers, (row) => row.createdAt),
+    [suppliers]
+  )
+
   const columns = useMemo<ColumnDef<Supplier>[]>(
     () => [
       {
@@ -85,7 +91,7 @@ export function SuppliersTable({
         ),
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {row.original.phone || '—'}
+            {row.original.phone || '-'}
           </span>
         ),
         filterFn: columnTextFilterFn,
@@ -98,7 +104,7 @@ export function SuppliersTable({
         ),
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {row.original.location || '—'}
+            {row.original.location || '-'}
           </span>
         ),
         filterFn: columnTextFilterFn,
@@ -111,7 +117,7 @@ export function SuppliersTable({
         ),
         cell: ({ row }) => (
           <span className="text-muted-foreground font-mono text-xs">
-            {row.original.nif || '—'}
+            {row.original.nif || '-'}
           </span>
         ),
         filterFn: columnTextFilterFn,
@@ -124,7 +130,7 @@ export function SuppliersTable({
         ),
         cell: ({ row }) => (
           <span className="text-muted-foreground font-mono text-xs">
-            {row.original.nis || '—'}
+            {row.original.nis || '-'}
           </span>
         ),
         filterFn: columnTextFilterFn,
@@ -137,7 +143,7 @@ export function SuppliersTable({
         ),
         cell: ({ row }) => (
           <span className="text-muted-foreground font-mono text-xs">
-            {row.original.rc || '—'}
+            {row.original.rc || '-'}
           </span>
         ),
         filterFn: columnTextFilterFn,
@@ -150,7 +156,7 @@ export function SuppliersTable({
         ),
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {row.original.email || '—'}
+            {row.original.email || '-'}
           </span>
         ),
         filterFn: columnTextFilterFn,
@@ -227,7 +233,7 @@ export function SuppliersTable({
   )
 
   const table = useReactTable({
-    data: suppliers,
+    data: orderedSuppliers,
     columns,
     getRowId: (row) => row._id,
     state: {
